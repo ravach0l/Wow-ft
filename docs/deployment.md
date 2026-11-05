@@ -24,6 +24,18 @@ docker compose up -d --build
 curl -s http://127.0.0.1:8085/healthz
 ```
 
+Der Container läuft als Benutzer mit UID 10001. Legt Docker `deploy/data` als root an, kann er die
+Datenbank nicht öffnen („unable to open database file“). Dann einmalig den Besitzer setzen und neu starten:
+
+```sh
+docker run --rm -v "$PWD/data:/x" alpine chown 10001:10001 /x
+docker compose restart wowft
+```
+
+Läuft Caddy selbst in Docker, den Container zusätzlich in dessen Netzwerk hängen
+(z. B. per `docker-compose.override.yml` mit `networks: [heimserver_net]`, `external: true`)
+und im Caddyfile `reverse_proxy wowft:8000` eintragen.
+
 Migrationen laufen beim Start automatisch. Trag in `.env` unter `WOWFT_ADMIN_USERS`
 deinen Authentik-Benutzernamen ein: Dann erscheint im Profil der Bereich „Admin: Module“,
 in dem du z. B. das Level-Rennen (standardmäßig aus) für alle einschaltest. Die Datenbank liegt in `deploy/data/wowft.db`.
