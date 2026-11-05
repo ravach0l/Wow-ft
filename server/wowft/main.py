@@ -5,7 +5,7 @@ from fastapi.responses import FileResponse
 from starlette.middleware.sessions import SessionMiddleware
 
 from . import __version__, auth
-from .api import characters, groups, ingest, me, photos
+from .api import admin, characters, groups, ingest, me, photos
 from .config import get_settings
 
 
@@ -39,6 +39,7 @@ def create_app() -> FastAPI:
     app.include_router(groups.router)
     app.include_router(characters.router)
     app.include_router(photos.router)
+    app.include_router(admin.router)
 
     if settings.static_dir:
         _mount_spa(app, Path(settings.static_dir))

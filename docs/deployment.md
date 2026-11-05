@@ -24,7 +24,9 @@ docker compose up -d --build
 curl -s http://127.0.0.1:8085/healthz
 ```
 
-Migrationen laufen beim Start automatisch. Die Datenbank liegt in `deploy/data/wowft.db`.
+Migrationen laufen beim Start automatisch. Trag in `.env` unter `WOWFT_ADMIN_USERS`
+deinen Authentik-Benutzernamen ein: Dann erscheint im Profil der Bereich „Admin: Module“,
+in dem du z. B. das Level-Rennen (standardmäßig aus) für alle einschaltest. Die Datenbank liegt in `deploy/data/wowft.db`.
 
 ## 3. Caddy
 
@@ -62,7 +64,10 @@ install -m 755 wowft-uploader-linux-amd64 ~/.local/bin/wowft-uploader
 wowft-uploader -setup
 ```
 
-- Der WoW-Ordner wird in den üblichen Prefixen gesucht: `~/Games/*` (Lutris),
+- Findet der Uploader WoW nicht an den bekannten Orten, durchsucht er Home, `/mnt`, `/media`
+  (unter Windows alle Laufwerke) nach dem Spielordner: eine `Wow*.exe` beliebigen Namens
+  oder die Ordner `WTF` und `Interface` nebeneinander. `wowft-uploader -find` zeigt die Treffer.
+- Bekannte Orte: `~/Games/*` (Lutris),
   Bottles (auch Flatpak), Steam-`compatdata` (auch Flatpak), Heroic, `~/.wine`,
   `~/.local/share/wineprefixes`. Sonst den Pfad zu `…/drive_c/Program Files (x86)/World of Warcraft`
   von Hand eingeben.

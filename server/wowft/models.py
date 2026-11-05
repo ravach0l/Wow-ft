@@ -126,3 +126,12 @@ class Photo(Base):
     level: Mapped[int | None] = mapped_column(Integer)
     path: Mapped[str] = mapped_column(String(255))
     created: Mapped[int] = mapped_column(Integer, default=now)
+
+
+class AppSetting(Base):
+    """Einstellungen für die ganze Seite, z. B. welche Module aktiv sind."""
+
+    __tablename__ = "app_settings"
+
+    key: Mapped[str] = mapped_column(String(64), primary_key=True)
+    value: Mapped[Any] = mapped_column(JSON)

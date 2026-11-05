@@ -15,6 +15,7 @@ export default function ProfilePage() {
       <Tokens />
       <Characters />
       <ManualUpload />
+      {me.isAdmin && <AdminFeatures />}
       <div className="section">
         <h2>Abmelden</h2>
         <p>Angemeldet als {me.name}.</p>
@@ -252,5 +253,37 @@ function DiscordSetting({ group, onSaved }: { group: GroupDetail; onSaved: () =>
       </div>
       {msg && <p className="meta" style={{ marginTop: 6 }}>{msg}</p>}
     </form>
+  );
+}
+
+function AdminFeatures() {
+  const { reloadMe } = useMe();
+  const { data } = useApi<{ key: string; label: string; enabled: boolean }[]>("/api/admin/features");
+  const [state, setState] = useState<Record<string, boolean>>({});
+  const [error, setError] = useState<string | null>(null);
+  async function toggle(key: string, on: boolean) {
+    setState((s) => ({ ...s, [key]: on }));
+    try {
+      await api.patch("/api/admin/features", { [key]: on });
+      setError(null);
+      await reloadMe();
+    } catch (e) {
+      setState((s) => ({ ...s, [key]: !on }));
+      setError((e as Error).message);
+    }
+  }
+  if (!data) return null;
+  return (
+    <div className="section">
+      <h2>Admin: Module</h2>
+      <p>Gilt für die ganze Seite und alle Gruppen. Ausgeschaltete Module sind für niemanden sichtbar.</p>
+      {data.map((f) => (
+        <label key={f.key} className="toggle" style={{ marginBottom: 8 }}>
+          <input type="checkbox" checked={state[f.key] ?? f.enabled} onChange={(e) => toggle(f.key, e.target.checked)} />
+          {f.label}
+        </label>
+      ))}
+      {error && <p className="error">{error}</p>}
+    </div>
   );
 }

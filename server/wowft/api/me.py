@@ -2,7 +2,8 @@ from fastapi import APIRouter, HTTPException
 from pydantic import BaseModel, Field
 from sqlalchemy import select
 
-from ..auth import CurrentUser, DbSession, new_token
+from ..auth import CurrentUser, DbSession, is_admin, new_token
+from ..features import get_features
 from ..models import Character, GroupMember, Token, now
 
 router = APIRouter(prefix="/api", tags=["me"])
@@ -14,6 +15,8 @@ def me(user: CurrentUser, session: DbSession):
     return {
         "id": user.id,
         "name": user.name,
+        "isAdmin": is_admin(user),
+        "features": get_features(session),
         "groups": [
             {"id": m.group.id, "name": m.group.name, "role": m.role}
             for m in sorted(memberships, key=lambda m: m.joined)

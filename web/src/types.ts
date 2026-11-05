@@ -1,6 +1,8 @@
 export interface Me {
   id: number;
   name: string;
+  isAdmin: boolean;
+  features: { race: boolean };
   groups: { id: number; name: string; role: "owner" | "member" }[];
 }
 

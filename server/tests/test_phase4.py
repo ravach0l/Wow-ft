@@ -78,10 +78,23 @@ def test_materials(make_client, sv_text):
     assert by_name["Leinenstoff"]["total"] == 40
 
 
-def test_race(make_client, sv_text):
+def test_race_is_admin_feature(make_client, sv_text, settings, monkeypatch):
+    monkeypatch.setattr(settings, "admin_users", "alice, other@example.org")
     alice, bob, g = setup_group(make_client)
     ingest(bob, upload_token(bob), sv_text.encode())
-    race = alice.get(f"/api/groups/{g['id']}/race").json()
+    url = f"/api/groups/{g['id']}/race"
+    # Standard: aus
+    assert alice.get(url).status_code == 404
+    assert alice.get("/api/me").json()["features"] == {"race": False}
+    assert alice.get("/api/me").json()["isAdmin"] is True
+    assert bob.get("/api/me").json()["isAdmin"] is False
+    # Nur Admins dürfen schalten
+    assert bob.get("/api/admin/features").status_code == 403
+    assert bob.patch("/api/admin/features", json={"race": True}).status_code == 403
+    r = alice.patch("/api/admin/features", json={"race": True, "unbekannt": True})
+    assert r.json() == [{"key": "race", "label": "Level-Rennen", "enabled": True}]
+    assert bob.get("/api/me").json()["features"] == {"race": True}
+    race = bob.get(url).json()
     testa = next(s for s in race if s["name"] == "Testa")
     assert testa["points"][0] == [1793860000, 36000, round(12 + 500 / 8800, 3)]
     assert len(testa["points"]) == 3

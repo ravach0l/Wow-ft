@@ -17,6 +17,9 @@ class Settings(BaseSettings):
     oidc_client_id: str = ""
     oidc_client_secret: str = ""
 
+    # Admins (Komma-getrennt): Authentik-Benutzername, E-Mail oder Login-ID.
+    admin_users: str = ""
+
     # Nur für lokale Entwicklung und Tests: Login ohne Authentik.
     dev_login: bool = False
 

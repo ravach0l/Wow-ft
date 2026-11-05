@@ -9,6 +9,7 @@ from .. import discord, metrics
 from ..auth import CurrentUser, DbSession
 from ..config import get_settings
 from ..events import describe
+from ..features import enabled
 from ..models import Character, Event, Group, GroupMember, Photo, Snapshot, User
 
 router = APIRouter(prefix="/api", tags=["groups"])
@@ -272,6 +273,8 @@ def _thin(points: list, limit: int) -> list:
 def race(group_id: int, user: CurrentUser, session: DbSession):
     """Level-Verlauf aller sichtbaren Charaktere: [Zeitpunkt, Spielzeit, Level+Anteil]."""
     _membership(session, group_id, user)
+    if not enabled(session, "race"):
+        raise HTTPException(404, "Das Rennen-Modul ist ausgeschaltet")
     series = []
     for c in _visible_characters(session, group_id):
         snaps = session.scalars(select(Snapshot).where(Snapshot.character_id == c.id).order_by(Snapshot.ts))

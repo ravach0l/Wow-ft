@@ -110,7 +110,7 @@ a.card:hover { text-decoration: none; border-color: var(--text-3); }
 .stat .v { font-size: 1.15rem; font-weight: 700; font-variant-numeric: tabular-nums; }
 
 .list { list-style: none; margin: 0; padding: 0; }
-.list li { display: flex; gap: 10px; align-items: baseline; padding: 10px 0; border-bottom: 1px solid var(--line); }
+.list li { display: flex; flex-wrap: wrap; gap: 6px 10px; align-items: baseline; padding: 10px 0; border-bottom: 1px solid var(--line); }
 .list li:last-child { border-bottom: 0; }
 .list .when { color: var(--text-3); font-size: .8rem; margin-left: auto; white-space: nowrap; }
 
@@ -129,7 +129,7 @@ a.card:hover { text-decoration: none; border-color: var(--text-3); }
 .toggle { display: flex; align-items: center; gap: 8px; font-size: .9rem; color: var(--text-2); }
 .chart { width: 100%; height: auto; display: block; }
 .chart text { fill: var(--text-3); font-size: 11px; }
-code { background: var(--surface-2); padding: 1px 5px; border-radius: 5px; font-size: .9em; }
+code { background: var(--surface-2); padding: 1px 5px; border-radius: 5px; font-size: .9em; overflow-wrap: anywhere; }
 ol.steps { padding-left: 20px; color: var(--text-2); margin: 0; }
 ol.steps li { margin-bottom: 6px; }
 

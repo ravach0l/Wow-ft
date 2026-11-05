@@ -100,6 +100,21 @@ def current_user(request: Request, session: DbSession) -> User:
 
 CurrentUser = Annotated[User, Depends(current_user)]
 
+
+def is_admin(user: User) -> bool:
+    admins = {a.strip().lower() for a in get_settings().admin_users.split(",") if a.strip()}
+    ids = {user.name.lower(), (user.email or "").lower(), user.auth_sub.lower()}
+    return bool(admins & ids)
+
+
+def admin_user(user: CurrentUser) -> User:
+    if not is_admin(user):
+        raise HTTPException(403, "Nur für Admins")
+    return user
+
+
+AdminUser = Annotated[User, Depends(admin_user)]
+
 router = APIRouter(prefix="/auth", tags=["auth"])
 _oauth: OAuth | None = None
 
