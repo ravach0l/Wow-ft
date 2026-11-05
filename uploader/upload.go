@@ -4,6 +4,7 @@ import (
 	"bytes"
 	"compress/gzip"
 	"encoding/json"
+	"errors"
 	"fmt"
 	"io"
 	"net/http"
@@ -12,11 +13,18 @@ import (
 
 var Version = "0.1.0"
 
+type PhotoRequest struct {
+	CharacterID int    `json:"characterId"`
+	Name        string `json:"name"`
+	T           int64  `json:"t"`
+}
+
 type Result struct {
-	Characters int      `json:"characters"`
-	Snapshots  int      `json:"snapshots"`
-	Events     int      `json:"events"`
-	Skipped    []string `json:"skipped"`
+	Characters    int            `json:"characters"`
+	Snapshots     int            `json:"snapshots"`
+	Events        int            `json:"events"`
+	Skipped       []string       `json:"skipped"`
+	PhotoRequests []PhotoRequest `json:"photoRequests"`
 }
 
 // UploadError unterscheidet dauerhafte Fehler (Datei/Token kaputt) von
@@ -44,6 +52,39 @@ func NewClient(server, token string) *Client {
 	return &Client{Server: server, Token: token, HTTP: &http.Client{Timeout: 60 * time.Second}}
 }
 
+func (c *Client) post(path, contentType string, body io.Reader, gzipped bool) ([]byte, error) {
+	req, err := http.NewRequest(http.MethodPost, c.Server+path, body)
+	if err != nil {
+		return nil, &UploadError{Message: err.Error(), Permanent: true}
+	}
+	req.Header.Set("Authorization", "Bearer "+c.Token)
+	req.Header.Set("Content-Type", contentType)
+	if gzipped {
+		req.Header.Set("Content-Encoding", "gzip")
+	}
+	req.Header.Set("User-Agent", "wowft-uploader/"+Version)
+
+	resp, err := c.HTTP.Do(req)
+	if err != nil {
+		return nil, &UploadError{Message: err.Error()}
+	}
+	defer resp.Body.Close()
+	data, _ := io.ReadAll(io.LimitReader(resp.Body, 1<<20))
+
+	if resp.StatusCode < 200 || resp.StatusCode >= 300 {
+		var detail struct {
+			Detail any `json:"detail"`
+		}
+		msg := string(data)
+		if json.Unmarshal(data, &detail) == nil && detail.Detail != nil {
+			msg = fmt.Sprint(detail.Detail)
+		}
+		permanent := resp.StatusCode >= 400 && resp.StatusCode < 500 && resp.StatusCode != http.StatusTooManyRequests
+		return nil, &UploadError{Status: resp.StatusCode, Message: msg, Permanent: permanent}
+	}
+	return data, nil
+}
+
 func (c *Client) Upload(content []byte) (*Result, error) {
 	var buf bytes.Buffer
 	zw := gzip.NewWriter(&buf)
@@ -53,36 +94,24 @@ func (c *Client) Upload(content []byte) (*Result, error) {
 	if err := zw.Close(); err != nil {
 		return nil, err
 	}
-	req, err := http.NewRequest(http.MethodPost, c.Server+"/api/ingest", &buf)
+	data, err := c.post("/api/ingest", "text/x-lua; charset=utf-8", &buf, true)
 	if err != nil {
-		return nil, &UploadError{Message: err.Error(), Permanent: true}
-	}
-	req.Header.Set("Authorization", "Bearer "+c.Token)
-	req.Header.Set("Content-Type", "text/x-lua; charset=utf-8")
-	req.Header.Set("Content-Encoding", "gzip")
-	req.Header.Set("User-Agent", "wowft-uploader/"+Version)
-
-	resp, err := c.HTTP.Do(req)
-	if err != nil {
-		return nil, &UploadError{Message: err.Error()}
-	}
-	defer resp.Body.Close()
-	body, _ := io.ReadAll(io.LimitReader(resp.Body, 1<<20))
-
-	if resp.StatusCode != http.StatusOK {
-		var detail struct {
-			Detail any `json:"detail"`
-		}
-		msg := string(body)
-		if json.Unmarshal(body, &detail) == nil && detail.Detail != nil {
-			msg = fmt.Sprint(detail.Detail)
-		}
-		permanent := resp.StatusCode >= 400 && resp.StatusCode < 500 && resp.StatusCode != http.StatusTooManyRequests
-		return nil, &UploadError{Status: resp.StatusCode, Message: msg, Permanent: permanent}
+		return nil, err
 	}
 	var r Result
-	if err := json.Unmarshal(body, &r); err != nil {
-		return nil, &UploadError{Status: resp.StatusCode, Message: "unerwartete Antwort"}
+	if err := json.Unmarshal(data, &r); err != nil {
+		return nil, &UploadError{Message: "unerwartete Antwort"}
 	}
 	return &r, nil
+}
+
+// UploadPhoto schickt ein Charakterbild. Ein schon vorhandenes Foto (409) gilt als Erfolg.
+func (c *Client) UploadPhoto(characterID int, t int64, jpegData []byte) error {
+	path := fmt.Sprintf("/api/characters/%d/photos?t=%d", characterID, t)
+	_, err := c.post(path, "image/jpeg", bytes.NewReader(jpegData), false)
+	var ue *UploadError
+	if errors.As(err, &ue) && ue.Status == http.StatusConflict {
+		return nil
+	}
+	return err
 }

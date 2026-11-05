@@ -4,6 +4,7 @@ import (
 	"bytes"
 	"compress/gzip"
 	"errors"
+	"fmt"
 	"io"
 	"log"
 	"net/http"
@@ -111,8 +112,16 @@ func TestClientErrors(t *testing.T) {
 }
 
 type fakeUploader struct {
-	calls []string
-	errs  []error
+	calls    []string
+	errs     []error
+	result   *Result
+	photos   []string
+	photoErr error
+}
+
+func (f *fakeUploader) UploadPhoto(characterID int, t int64, data []byte) error {
+	f.photos = append(f.photos, fmt.Sprintf("%d:%d:%d", characterID, t, len(data)))
+	return f.photoErr
 }
 
 func (f *fakeUploader) Upload(content []byte) (*Result, error) {
@@ -123,6 +132,9 @@ func (f *fakeUploader) Upload(content []byte) (*Result, error) {
 		if err != nil {
 			return nil, err
 		}
+	}
+	if f.result != nil {
+		return f.result, nil
 	}
 	return &Result{Characters: 1}, nil
 }

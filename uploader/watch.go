@@ -5,8 +5,10 @@ import (
 	"encoding/hex"
 	"encoding/json"
 	"errors"
+	"fmt"
 	"log"
 	"os"
+	"path/filepath"
 	"time"
 )
 
@@ -19,6 +21,7 @@ const (
 
 type Uploader interface {
 	Upload(content []byte) (*Result, error)
+	UploadPhoto(characterID int, t int64, jpegData []byte) error
 }
 
 type fileState struct {
@@ -41,7 +44,8 @@ type Watcher struct {
 	files        []string
 	lastDiscover time.Time
 	state        map[string]*fileState
-	uploaded     map[string]string // Pfad -> Hash des zuletzt hochgeladenen Inhalts
+	uploaded     map[string]string // Pfad -> Hash des zuletzt hochgeladenen Inhalts; "photo:…" -> Datei
+	photoMissing map[string]bool
 	// LastSuccess ist der Zeitpunkt des letzten erfolgreichen Uploads.
 	LastSuccess time.Time
 }
@@ -49,7 +53,7 @@ type Watcher struct {
 func NewWatcher(cfg *Config, up Uploader, statePath string, logger *log.Logger) *Watcher {
 	w := &Watcher{
 		cfg: cfg, up: up, statePath: statePath, log: logger,
-		state: map[string]*fileState{}, uploaded: map[string]string{},
+		state: map[string]*fileState{}, uploaded: map[string]string{}, photoMissing: map[string]bool{},
 	}
 	if data, err := os.ReadFile(statePath); err == nil {
 		_ = json.Unmarshal(data, &w.uploaded)
@@ -154,7 +158,53 @@ func (w *Watcher) pollFile(path string, now time.Time) bool {
 	if len(res.Skipped) > 0 {
 		w.log.Printf("Übersprungen (gehören einem anderen Konto): %v", res.Skipped)
 	}
+	w.uploadPhotos(path, res.PhotoRequests)
 	return true
+}
+
+// uploadPhotos sucht zu jedem /ft foto-Zeitpunkt den Screenshot und lädt ihn hoch.
+func (w *Watcher) uploadPhotos(svPath string, reqs []PhotoRequest) {
+	if len(reqs) == 0 {
+		return
+	}
+	dir := ScreenshotDir(svPath)
+	changed := false
+	for _, r := range reqs {
+		key := fmt.Sprintf("photo:%d:%d", r.CharacterID, r.T)
+		if w.uploaded[key] != "" {
+			continue
+		}
+		shot := FindScreenshot(dir, time.Unix(r.T, 0))
+		if shot == "" {
+			if !w.photoMissing[key] {
+				w.photoMissing[key] = true
+				w.log.Printf("Kein Screenshot zu /ft foto von %s gefunden (Ordner: %s). Nur JPG/PNG werden unterstützt.", r.Name, dir)
+			}
+			continue
+		}
+		data, err := MakePortrait(shot)
+		if err != nil {
+			w.log.Printf("Screenshot %s nicht lesbar: %v", shot, err)
+			w.uploaded[key] = "unlesbar"
+			changed = true
+			continue
+		}
+		if err := w.up.UploadPhoto(r.CharacterID, r.T, data); err != nil {
+			var ue *UploadError
+			if errors.As(err, &ue) && ue.Permanent {
+				w.uploaded[key] = "abgelehnt"
+				changed = true
+			}
+			w.log.Printf("Foto von %s nicht hochgeladen: %v", r.Name, err)
+			continue
+		}
+		w.uploaded[key] = filepath.Base(shot)
+		changed = true
+		w.log.Printf("Foto von %s hochgeladen (%s).", r.Name, filepath.Base(shot))
+	}
+	if changed {
+		w.saveState()
+	}
 }
 
 func (w *Watcher) saveState() {
