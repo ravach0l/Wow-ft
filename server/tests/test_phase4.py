@@ -176,3 +176,19 @@ def test_valid_webhook():
     assert discord.valid_webhook("https://discordapp.com/api/webhooks/1/a_b-c")
     assert not discord.valid_webhook("https://discord.com.evil.io/api/webhooks/1/a")
     assert not discord.valid_webhook("http://discord.com/api/webhooks/1/a")
+
+
+def test_garbage_snapshots_are_dropped(make_client, sv_text):
+    """Logout-Müll (Level zu niedrig, XP-Max 0) darf weder gespeichert noch angezeigt werden."""
+    alice, bob, g = setup_group(make_client)
+    tok = upload_token(bob)
+    bogus = (
+        '["snapshots"] = {\n\t\t\t\t{\n\t\t\t\t\t["t"] = 1793865000,\n\t\t\t\t\t["level"] = 3,\n'
+        '\t\t\t\t\t["xp"] = 0,\n\t\t\t\t\t["xpMax"] = 0,\n\t\t\t\t}, -- [0]\n'
+    )
+    assert '["snapshots"] = {\n' in sv_text
+    ingest(bob, tok, sv_text.replace('["snapshots"] = {\n', bogus, 1).encode())
+    cid = bob.get("/api/me/characters").json()[0]["id"]
+    snaps = alice.get(f"/api/characters/{cid}/history").json()["snapshots"]
+    assert snaps and all(s["level"] >= 12 for s in snaps)
+    assert alice.get(f"/api/characters/{cid}/history").json()["character"]["level"] >= 12

@@ -34,7 +34,8 @@ export default function CharacterPage() {
     .filter((p): p is { x: number; y: number } => p.x != null);
 
   return (
-    <>
+    <div className="char-layout">
+      <div className="char-main">
       <div className={`hero${photo ? " with-photo" : ""}`}>
         {photo && (
           <figure className="photo">
@@ -98,8 +99,9 @@ export default function CharacterPage() {
       </div>
 
       <StateSections state={data.state} />
+      </div>
 
-      <div className="section">
+      <aside className="section char-side" aria-label="Ereignisse">
         <h2>Ereignisse</h2>
         {data.events.length === 0 ? (
           <p>Noch keine.</p>
@@ -108,8 +110,8 @@ export default function CharacterPage() {
             {data.events.map((e) => <EventLine key={e.id} e={e} showName={false} />)}
           </ul>
         )}
-      </div>
-    </>
+      </aside>
+    </div>
   );
 }
 

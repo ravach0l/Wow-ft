@@ -174,3 +174,12 @@ ol.steps li { margin-bottom: 6px; }
 .talent.none { opacity: .45; }
 .talent.part { border-color: var(--accent); color: var(--text); }
 .talent.full { border-color: var(--accent); background: color-mix(in srgb, var(--accent) 18%, var(--surface)); color: var(--text); }
+
+/* Breite Bildschirme: mehr Platz nutzen */
+@media (min-width: 1100px) {
+  .shell { max-width: 1400px; }
+  .grid { grid-template-columns: repeat(3, 1fr); }
+  .char-layout { display: grid; grid-template-columns: minmax(0, 1fr) 360px; gap: 0 16px; align-items: start; }
+  .char-main { min-width: 0; }
+  .char-side { position: sticky; top: 12px; max-height: calc(100vh - 24px); overflow-y: auto; }
+}

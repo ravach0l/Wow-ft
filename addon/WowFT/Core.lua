@@ -96,6 +96,12 @@ local function TakeSnapshot(reason)
   }
   local list = char.snapshots
   local last = list[#list]
+  -- Beim Logout/Reload liefert WoW manchmal Müll (altes Level, XP-Max 0). Das Level sinkt nie;
+  -- XP-Max 0 gibt es nur auf Maximallevel (dann hatte auch der Snapshot davor 0).
+  if last and (snap.level < last.level or (snap.xpMax == 0 and (last.xpMax or 0) > 0)) then
+    ns.lastSnapshotReason = "verworfen (" .. tostring(reason) .. ")"
+    return
+  end
   if last and last.t == snap.t then
     list[#list] = snap -- gleicher Zeitpunkt: ersetzen statt doppeln
   else

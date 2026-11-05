@@ -10,11 +10,12 @@ import json
 from typing import Annotated, Any
 
 from pydantic import BaseModel, BeforeValidator, ConfigDict, Field, ValidationError, field_validator
-from sqlalchemy import select
+from sqlalchemy import func, select
 from sqlalchemy.dialects.sqlite import insert as sqlite_insert
 from sqlalchemy.orm import Session
 
 from . import events, svparse
+from .config import get_settings
 from .models import Character, Event, Photo, Snapshot, User, now
 
 SUPPORTED_SCHEMAS = {1}
@@ -211,6 +212,27 @@ def _insert_events(session: Session, rows: list[dict[str, Any]]) -> list[int]:
     return list(session.scalars(stmt))
 
 
+def _plausible(session: Session, character_id: int, snaps: list[SnapshotIn]) -> list[SnapshotIn]:
+    """Wirft Müll-Snapshots weg, die WoW beim Logout/Reload manchmal liefert.
+
+    Dort kommen mitunter ein altes Level und XP-Max 0 zurück. Echte Werte erkennt man daran:
+    Unterhalb des Maximallevels ist XP-Max größer 0, und das Level sinkt nie.
+    """
+    max_level = get_settings().max_level
+    top = session.scalar(
+        select(func.max(Snapshot.level)).where(
+            Snapshot.character_id == character_id, Snapshot.ts < min(s.t for s in snaps)
+        )
+    )
+    keep: list[SnapshotIn] = []
+    for s in sorted(snaps, key=lambda s: s.t):
+        if (s.xpMax == 0 and s.level < max_level) or s.level < (top or 0):
+            continue
+        top = max(top or 0, s.level)
+        keep.append(s)
+    return keep
+
+
 def store(session: Session, user: User, data: SavedVariablesIn) -> tuple[dict[str, Any], list[int]]:
     """Speichert den Upload. Gibt die Antwort und die IDs neuer Ereignisse zurück."""
     result: dict[str, Any] = {
@@ -242,7 +264,8 @@ def store(session: Session, user: User, data: SavedVariablesIn) -> tuple[dict[st
         session.flush()
         result["characters"] += 1
 
-        if c.snapshots:
+        snaps = _plausible(session, char.id, c.snapshots) if c.snapshots else []
+        if snaps:
             rows = [
                 {
                     "character_id": char.id,
@@ -256,7 +279,7 @@ def store(session: Session, user: User, data: SavedVariablesIn) -> tuple[dict[st
                     "zone": s.zone,
                     "gold": s.gold,
                 }
-                for s in c.snapshots
+                for s in snaps
             ]
             stmt = sqlite_insert(Snapshot).values(rows).on_conflict_do_nothing()
             result["snapshots"] += session.execute(stmt).rowcount
