@@ -1,0 +1,12 @@
+__pycache__/
+*.egg-info/
+.venv/
+.pytest_cache/
+.ruff_cache/
+server/data/
+.env
+node_modules/
+web/dist/
+uploader/dist/
+uploader/wowft-uploader
+uploader/wowft-uploader.exe

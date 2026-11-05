@@ -1,0 +1,111 @@
+"""Datenmodell. Zeitpunkte sind Unix-Sekunden (UTC) als Integer."""
+
+import time
+from typing import Any
+
+from sqlalchemy import JSON, Boolean, ForeignKey, Integer, String, UniqueConstraint
+from sqlalchemy.orm import DeclarativeBase, Mapped, mapped_column, relationship
+
+
+def now() -> int:
+    return int(time.time())
+
+
+class Base(DeclarativeBase):
+    pass
+
+
+class User(Base):
+    __tablename__ = "users"
+
+    id: Mapped[int] = mapped_column(primary_key=True)
+    auth_sub: Mapped[str] = mapped_column(String(255), unique=True)
+    name: Mapped[str] = mapped_column(String(100))
+    email: Mapped[str | None] = mapped_column(String(255))
+    created: Mapped[int] = mapped_column(Integer, default=now)
+
+
+class Group(Base):
+    __tablename__ = "groups"
+
+    id: Mapped[int] = mapped_column(primary_key=True)
+    name: Mapped[str] = mapped_column(String(100))
+    invite_code: Mapped[str] = mapped_column(String(64), unique=True)
+    created: Mapped[int] = mapped_column(Integer, default=now)
+
+    members: Mapped[list["GroupMember"]] = relationship(back_populates="group", cascade="all, delete-orphan")
+
+
+class GroupMember(Base):
+    __tablename__ = "group_members"
+
+    group_id: Mapped[int] = mapped_column(ForeignKey("groups.id", ondelete="CASCADE"), primary_key=True)
+    user_id: Mapped[int] = mapped_column(ForeignKey("users.id", ondelete="CASCADE"), primary_key=True)
+    role: Mapped[str] = mapped_column(String(20), default="member")  # owner | member
+    joined: Mapped[int] = mapped_column(Integer, default=now)
+
+    group: Mapped[Group] = relationship(back_populates="members")
+    user: Mapped[User] = relationship()
+
+
+class Token(Base):
+    __tablename__ = "tokens"
+
+    id: Mapped[int] = mapped_column(primary_key=True)
+    user_id: Mapped[int] = mapped_column(ForeignKey("users.id", ondelete="CASCADE"), index=True)
+    name: Mapped[str] = mapped_column(String(100))
+    hash: Mapped[str] = mapped_column(String(64), unique=True)
+    prefix: Mapped[str] = mapped_column(String(16))
+    created: Mapped[int] = mapped_column(Integer, default=now)
+    last_used: Mapped[int | None] = mapped_column(Integer)
+    revoked: Mapped[int | None] = mapped_column(Integer)
+
+
+class Character(Base):
+    __tablename__ = "characters"
+
+    id: Mapped[int] = mapped_column(primary_key=True)
+    user_id: Mapped[int] = mapped_column(ForeignKey("users.id", ondelete="CASCADE"), index=True)
+    # Forever hat keine wählbaren Realms; die GUID identifiziert den Charakter eindeutig.
+    guid: Mapped[str] = mapped_column(String(64), unique=True)
+    name: Mapped[str] = mapped_column(String(64))
+    realm: Mapped[str | None] = mapped_column(String(64))
+    region: Mapped[str | None] = mapped_column(String(8))
+    class_: Mapped[str | None] = mapped_column("class", String(32))
+    race: Mapped[str | None] = mapped_column(String(32))
+    faction: Mapped[str | None] = mapped_column(String(16))
+    visible: Mapped[bool] = mapped_column(Boolean, default=True)
+    gold_visible: Mapped[bool] = mapped_column(Boolean, default=False)
+    created: Mapped[int] = mapped_column(Integer, default=now)
+    last_upload: Mapped[int | None] = mapped_column(Integer)
+
+    user: Mapped[User] = relationship()
+
+
+class Snapshot(Base):
+    __tablename__ = "snapshots"
+    __table_args__ = (UniqueConstraint("character_id", "ts"),)
+
+    id: Mapped[int] = mapped_column(primary_key=True)
+    character_id: Mapped[int] = mapped_column(ForeignKey("characters.id", ondelete="CASCADE"))
+    ts: Mapped[int] = mapped_column(Integer)
+    level: Mapped[int] = mapped_column(Integer)
+    xp: Mapped[int] = mapped_column(Integer)
+    xp_max: Mapped[int] = mapped_column(Integer)
+    rested: Mapped[int] = mapped_column(Integer, default=0)
+    played_total: Mapped[int | None] = mapped_column(Integer)
+    played_level: Mapped[int | None] = mapped_column(Integer)
+    zone: Mapped[str | None] = mapped_column(String(100))
+    gold: Mapped[int | None] = mapped_column(Integer)
+    extras: Mapped[dict[str, Any] | None] = mapped_column(JSON)
+
+
+class Event(Base):
+    __tablename__ = "events"
+    __table_args__ = (UniqueConstraint("character_id", "ts", "type"),)
+
+    id: Mapped[int] = mapped_column(primary_key=True)
+    character_id: Mapped[int] = mapped_column(ForeignKey("characters.id", ondelete="CASCADE"))
+    ts: Mapped[int] = mapped_column(Integer, index=True)
+    type: Mapped[str] = mapped_column(String(32))
+    data: Mapped[dict[str, Any] | None] = mapped_column(JSON)
