@@ -49,6 +49,7 @@ WowFTDB = {
 					["zone"] = "Dämmerwald \"Duskwood\"",
 					["playedTotal"] = 39600,
 					["playedLevel"] = 1602,
+					["gold"] = 123456,
 				}, -- [3]
 			},
 			["levelUps"] = {
@@ -59,6 +60,120 @@ WowFTDB = {
 				}, -- [1]
 			},
 			["settings"] = {
+			},
+			["deaths"] = 2,
+			["deathLog"] = {
+				{
+					["t"] = 1793861000,
+					["level"] = 12,
+					["zone"] = "Westfall",
+				}, -- [1]
+				{
+					["t"] = 1793863000,
+					["level"] = 13,
+					["zone"] = "Die Todesminen",
+				}, -- [2]
+			},
+			["bossKills"] = {
+				{
+					["t"] = 1793863100,
+					["id"] = 1081,
+					["name"] = "Edwin VanCleef",
+					["instance"] = "Die Todesminen",
+					["level"] = 13,
+				}, -- [1]
+			},
+			["photoRequests"] = {
+				1793863500, -- [1]
+			},
+			["skills"] = {
+				{
+					["name"] = "Bergbau",
+					["rank"] = 87,
+					["max"] = 150,
+					["header"] = "Berufe",
+				}, -- [1]
+				{
+					["name"] = "Erste Hilfe",
+					["rank"] = 40,
+					["max"] = 75,
+					["header"] = "Sekundäre Fertigkeiten",
+				}, -- [2]
+				{
+					["name"] = "Schwerter",
+					["rank"] = 60,
+					["max"] = 65,
+					["header"] = "Waffenfertigkeiten",
+				}, -- [3]
+			},
+			["equipment"] = {
+				{
+					["slot"] = 16,
+					["id"] = 2042,
+					["name"] = "Klinge des Testers",
+					["quality"] = 3,
+				}, -- [1]
+				{
+					["slot"] = 5,
+					["id"] = 6125,
+					["name"] = "Raues Hemd",
+					["quality"] = 1,
+				}, -- [2]
+			},
+			["reputation"] = {
+				{
+					["id"] = 72,
+					["name"] = "Sturmwind",
+					["standing"] = 5,
+					["value"] = 4500,
+					["min"] = 3000,
+					["max"] = 9000,
+				}, -- [1]
+			},
+			["talents"] = {
+				{
+					["name"] = "Waffen",
+					["points"] = 3,
+					["talents"] = {
+						{
+							["name"] = "Verbessertes Heldenhaftes",
+							["rank"] = 3,
+							["max"] = 3,
+							["tier"] = 1,
+							["col"] = 1,
+						}, -- [1]
+					},
+				}, -- [1]
+				{
+					["name"] = "Furor",
+					["points"] = 0,
+					["talents"] = {
+					},
+				}, -- [2]
+			},
+			["materials"] = {
+				["bags"] = {
+					{
+						["id"] = 2770,
+						["name"] = "Kupfererz",
+						["count"] = 20,
+					}, -- [1]
+				},
+				["bank"] = {
+					{
+						["id"] = 2589,
+						["name"] = "Leinenstoff",
+						["count"] = 40,
+					}, -- [1]
+					{
+						["id"] = 2770,
+						["name"] = "Kupfererz",
+						["count"] = 5,
+					}, -- [2]
+				},
+				["bankScanned"] = 1793862500,
+			},
+			["apiErrors"] = {
 			},
 		},
 		["Player-4711-0DEF5678"] = {

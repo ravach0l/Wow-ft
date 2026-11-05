@@ -75,6 +75,7 @@ local function TakeSnapshot(reason)
     zone = GetRealZoneText() or GetZoneText(),
     playedTotal = total,
     playedLevel = inLevel,
+    gold = char.settings.trackGold ~= false and GetMoney() or nil,
   }
   local list = char.snapshots
   local last = list[#list]
@@ -94,6 +95,27 @@ ns.TakeSnapshot = TakeSnapshot
 function ns.CurrentCharacter()
   return char
 end
+
+---------------------------------------------------------------------------
+-- Phase 4: Zustand sammeln (gebündelt, damit Taschen-Events nicht spammen)
+---------------------------------------------------------------------------
+local collectPending = false
+local bankOpen = false
+
+local function ScheduleCollect()
+  if collectPending or not char then
+    return
+  end
+  collectPending = true
+  C_Timer.After(ns.COLLECT_DELAY, function()
+    collectPending = false
+    ns.Collect.All(char)
+    if bankOpen then
+      ns.Collect.Bank(char)
+    end
+  end)
+end
+ns.ScheduleCollect = ScheduleCollect
 
 ---------------------------------------------------------------------------
 -- Events
@@ -126,6 +148,10 @@ function handlers.PLAYER_LOGIN()
   if ns.UI then
     ns.UI.Init()
   end
+  -- Etwas warten, bis Item- und Fraktionsdaten geladen sind.
+  C_Timer.After(5, function()
+    ns.Collect.All(char)
+  end)
 end
 
 function handlers.TIME_PLAYED_MSG(total, inLevel)
@@ -170,11 +196,64 @@ function handlers.PLAYER_XP_UPDATE()
 end
 
 function handlers.PLAYER_LOGOUT()
+  if char then
+    ns.Collect.All(char)
+  end
   TakeSnapshot("logout")
 end
 
+function handlers.PLAYER_DEAD()
+  if not char then
+    return
+  end
+  char.deaths = (char.deaths or 0) + 1
+  Util.Push(char.deathLog, {
+    t = time(),
+    level = UnitLevel("player"),
+    zone = GetRealZoneText() or GetZoneText(),
+  }, ns.MAX_DEATHLOG)
+end
+
+-- Boss besiegt (Dungeons und Schlachtzüge).
+function handlers.ENCOUNTER_END(encounterID, encounterName, _, _, success)
+  if not char or success ~= 1 then
+    return
+  end
+  local instance = GetInstanceInfo()
+  Util.Push(char.bossKills, {
+    t = time(),
+    id = encounterID,
+    name = encounterName,
+    instance = instance,
+    level = UnitLevel("player"),
+  }, ns.MAX_BOSSKILLS)
+end
+
+function handlers.BANKFRAME_OPENED()
+  bankOpen = true
+  if char then
+    ns.Collect.Bank(char)
+  end
+end
+
+function handlers.BANKFRAME_CLOSED()
+  bankOpen = false
+end
+
+for _, event in ipairs({
+  "SKILL_LINES_CHANGED",
+  "PLAYER_EQUIPMENT_CHANGED",
+  "UPDATE_FACTION",
+  "CHARACTER_POINTS_CHANGED",
+  "BAG_UPDATE_DELAYED",
+  "PLAYERBANKSLOTS_CHANGED",
+}) do
+  handlers[event] = ScheduleCollect
+end
+
+-- Unbekannte Events (andere Client-Version) dürfen das Addon nicht stoppen.
 for event in pairs(handlers) do
-  frame:RegisterEvent(event)
+  pcall(frame.RegisterEvent, frame, event)
 end
 frame:SetScript("OnEvent", function(_, event, ...)
   handlers[event](...)
@@ -186,10 +265,25 @@ end)
 SLASH_WOWFT1 = "/ft"
 SlashCmdList.WOWFT = function(input)
   local cmd = strlower(strtrim(input or ""))
+  if not char and cmd ~= "" then
+    Print("Noch nicht initialisiert.")
+    return
+  end
   if cmd == "show" then
     ns.UI.SetShown(true)
   elseif cmd == "hide" then
     ns.UI.SetShown(false)
+  elseif cmd == "foto" then
+    ns.Photo.Open()
+  elseif cmd == "gold an" or cmd == "gold aus" then
+    char.settings.trackGold = cmd == "gold an"
+    Print("Gold wird " .. (char.settings.trackGold and "erfasst." or "nicht mehr erfasst."))
+  elseif cmd == "material an" or cmd == "material aus" then
+    char.settings.trackMaterials = cmd == "material an"
+    if not char.settings.trackMaterials then
+      char.materials = nil
+    end
+    Print("Handwerksmaterialien werden " .. (char.settings.trackMaterials and "erfasst." or "nicht mehr erfasst."))
   elseif cmd == "snap" then
     TakeSnapshot("manual")
     Print("Snapshot gespeichert. Mit /reload wird er auf die Platte geschrieben.")
@@ -204,7 +298,10 @@ SlashCmdList.WOWFT = function(input)
       #char.levelUps,
       last and Util.Ago(time() - last.t) or "keiner"
     ))
+    for key, err in pairs(char.apiErrors or {}) do
+      Print(("API-Problem bei %s: %s"):format(key, err))
+    end
   else
-    Print("Befehle: /ft show | hide | status | snap")
+    Print("Befehle: /ft show | hide | status | snap | foto | gold an|aus | material an|aus")
   end
 end

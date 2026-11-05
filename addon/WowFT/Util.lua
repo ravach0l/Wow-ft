@@ -1,11 +1,15 @@
 -- Reine Hilfsfunktionen ohne WoW-API, damit sie außerhalb des Spiels testbar sind.
 local _, ns = ...
 
-ns.VERSION = "0.1.0"
+ns.VERSION = "0.2.0"
 ns.SCHEMA = 1
 ns.MAX_SNAPSHOTS = 50
 ns.SNAPSHOT_INTERVAL = 15 * 60 -- Sekunden zwischen periodischen Snapshots
 ns.ZONE_THROTTLE = 60          -- mindestens so viele Sekunden zwischen Zonen-Snapshots
+ns.COLLECT_DELAY = 3           -- Sekunden Sammelpause nach Änderungen (Taschen, Ruf, ...)
+ns.MAX_DEATHLOG = 50
+ns.MAX_BOSSKILLS = 100
+ns.MAX_PHOTO_REQUESTS = 20
 
 local Util = {}
 ns.Util = Util
@@ -46,6 +50,10 @@ function Util.InitCharacter(db, guid)
   c.snapshots = c.snapshots or {}
   c.levelUps = c.levelUps or {}
   c.settings = c.settings or {}
+  c.deaths = c.deaths or 0
+  c.deathLog = c.deathLog or {}
+  c.bossKills = c.bossKills or {}
+  c.photoRequests = c.photoRequests or {}
   return c
 end
 
