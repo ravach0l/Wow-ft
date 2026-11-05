@@ -122,15 +122,16 @@ Ansicht: [`docs/ui-mockup.png`](ui-mockup.png).
 
 **Sichtbarkeit (Freigaben):** Alle Mitglieder einer Gruppe sehen die sichtbaren Charaktere der
 anderen („in Gruppen zeigen“ pro Charakter). Darüber hinaus kann der Besitzer je Charakter einzelne
-Kategorien ausblenden (Profil → „Was sehen die anderen?“): Spielzeit und Tempo, Gold, Aufenthaltsort,
+Kategorien ausblenden (Profil → „Was sehen die anderen?“): Spielzeit, Tempo (XP/Std.), Gold, Aufenthaltsort,
 Ausrüstung, Berufe, Ruf, Talente, Materialien, Tode, Boss-Kills, Foto. Level und XP sind immer sichtbar;
 der Besitzer sieht seine Charaktere selbst immer vollständig. Entscheidend ist `server/wowft/privacy.py`:
 Die Prüfung läuft auf dem Server und gilt für Übersicht, Detailseite, Feed, Material, Rennen, Foto-Abruf
 und Discord. Ausgeblendetes verlässt den Server nicht. Standard: alles sichtbar außer Gold.
 
-**Spielzeit und Tempo** (XP/Std., Zeit bis Maximallevel) sind für andere **nur sichtbar, wenn der
-Rennen-Modus an ist**, selbst wenn der Besitzer sie freigegeben hat (Tempo ergibt sich aus der Spielzeit).
-Der Modus ist standardmäßig aus; die Sortierung nach Tempo/Spielzeit gibt es dann nicht.
+**Spielzeit** ist für andere **nur sichtbar, wenn der Rennen-Modus an ist**, selbst wenn der Besitzer
+sie freigegeben hat (Modus standardmäßig aus; dann gibt es auch die Spielzeit-Achse und -Sortierung nicht).
+**Tempo** (XP/Std., Zeit bis Maximallevel) wird trotzdem berechnet und gezeigt; es hat eine eigene
+Freigabe (`rate`) und hängt nicht am Rennen-Modus.
 
 **Zwei getrennte Schlüssel:** Login (Authentik) für die Webseite, Upload-Token für den Uploader.
 Auf dem Spielrechner steht nie ein Passwort.

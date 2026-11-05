@@ -182,8 +182,8 @@ def character_state(
         return None
     snaps.reverse()
     s = snaps[-1]
-    # Das Tempo ergibt sich aus der Spielzeit: beides gehört zu einer Freigabe.
-    rate = None if "pace" in hidden else metrics.xp_per_hour(snaps)
+    # Das Tempo wird aus der Spielzeit berechnet, hängt aber nicht an deren Freigabe.
+    rate = None if "rate" in hidden else metrics.xp_per_hour(snaps)
     photo_id = (
         None
         if "photo" in hidden

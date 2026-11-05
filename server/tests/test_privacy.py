@@ -51,15 +51,16 @@ def test_defaults_show_everything_except_gold(world):
     assert h["state"]["talents"] and h["state"]["materials"]
 
 
-def test_pace_hides_playtime_and_derived_values(world):
+def test_pace_hides_playtime_only(world):
     alice, bob, g, cid, _ = world
     before = overview_of(alice, g, cid)
-    assert before["xpPerHour"] is not None and before["etaSeconds"] is not None
+    assert before["playedTotal"] is not None and before["xpPerHour"] is not None
     share(bob, cid, pace=False)
     c = overview_of(alice, g, cid)
-    # Das Tempo ergibt sich aus der Spielzeit; wer eines zeigt, verrät das andere.
-    assert (c["playedTotal"], c["playedLevel"], c["xpPerHour"], c["etaSeconds"]) == (None, None, None, None)
-    assert "pace" in c["hidden"]
+    assert (c["playedTotal"], c["playedLevel"]) == (None, None)
+    assert "pace" in c["hidden"] and "rate" not in c["hidden"]
+    # Das Tempo hängt nicht an der Spielzeit-Freigabe.
+    assert c["xpPerHour"] == before["xpPerHour"] and c["etaSeconds"] == before["etaSeconds"]
     # Level und XP bleiben sichtbar.
     assert c["level"] == before["level"] and c["xp"] == before["xp"] and c["totalXp"] == before["totalXp"]
     h = alice.get(f"/api/characters/{cid}/history").json()
@@ -67,6 +68,42 @@ def test_pace_hides_playtime_and_derived_values(world):
     # Der Besitzer sieht weiterhin alles.
     own = overview_of(bob, g, cid)
     assert own["playedTotal"] == before["playedTotal"] and own["hidden"] == []
+
+
+def test_rate_can_be_hidden_separately(world):
+    alice, bob, g, cid, _ = world
+    before = overview_of(alice, g, cid)
+    share(bob, cid, rate=False)
+    c = overview_of(alice, g, cid)
+    assert (c["xpPerHour"], c["etaSeconds"]) == (None, None)
+    assert c["playedTotal"] == before["playedTotal"] and "rate" in c["hidden"]
+    assert overview_of(bob, g, cid)["xpPerHour"] == before["xpPerHour"]  # Besitzer
+
+
+def test_playtime_only_visible_while_race_mode_is_on(world):
+    alice, bob, g, cid, _ = world
+    on = overview_of(alice, g, cid)
+    assert on["playedTotal"] is not None and on["xpPerHour"] is not None
+
+    # Rennen-Modus aus: Spielzeit verborgen, obwohl bob sie freigegeben hat.
+    assert alice.patch("/api/admin/features", json={"race": False}).status_code == 200
+    assert bob.get("/api/me/characters").json()[0]["share"]["pace"] is True
+    off = overview_of(alice, g, cid)
+    assert (off["playedTotal"], off["playedLevel"]) == (None, None) and "pace" in off["hidden"]
+    # XP pro Stunde und Zeit bis zum Maximallevel werden weiter berechnet.
+    assert off["xpPerHour"] == on["xpPerHour"] and off["etaSeconds"] == on["etaSeconds"]
+    assert "rate" not in off["hidden"]
+    h = alice.get(f"/api/characters/{cid}/history").json()
+    assert all(s["playedTotal"] is None for s in h["snapshots"]) and "pace" in h["hidden"]
+    assert off["level"] == on["level"] and off["totalXp"] == on["totalXp"]
+    own = overview_of(bob, g, cid)
+    assert own["playedTotal"] == on["playedTotal"] and own["xpPerHour"] is not None
+
+    # Wieder an: sichtbar, sofern freigegeben.
+    alice.patch("/api/admin/features", json={"race": True})
+    assert overview_of(alice, g, cid)["playedTotal"] == on["playedTotal"]
+    share(bob, cid, pace=False)
+    assert overview_of(alice, g, cid)["playedTotal"] is None
 
 
 def test_zone_deaths_and_gold(world):

@@ -24,6 +24,7 @@ export default function CharacterPage() {
   const color = classColor(c.class);
   // Ohne freigegebene Spielzeit gibt es nur die Kalenderachse.
   const paceHidden = data.hidden.includes("pace");
+  const rateHidden = data.hidden.includes("rate");
   const axis: Axis = paceHidden ? "calendar" : axisChoice;
   const hiddenNames = hiddenLabels(data.hidden, me.features.race);
   const photo = data.photos[photoIdx] ?? data.photos[0];
@@ -54,10 +55,14 @@ export default function CharacterPage() {
           </div>
           <XpBar c={c} />
           <div className="stats">
-            {!paceHidden && (
+            {!rateHidden && (
               <>
                 <Stat k="XP pro Stunde" v={number(c.xpPerHour)} />
                 <Stat k="bis Level 60 (Spielzeit)" v={duration(c.etaSeconds)} />
+              </>
+            )}
+            {!paceHidden && (
+              <>
                 <Stat k="Spielzeit gesamt" v={duration(c.playedTotal)} />
                 <Stat k="Spielzeit im Level" v={duration(c.playedLevel)} />
               </>

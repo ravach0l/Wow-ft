@@ -24,10 +24,10 @@ class Category:
 
 
 CATEGORIES: tuple[Category, ...] = (
-    # Spielzeit und das daraus berechnete Tempo (XP/Std., Zeit bis zum Maximallevel)
-    # hängen zusammen: Wer eines zeigt, verrät das andere. Für andere sichtbar nur bei
-    # eingeschaltetem Rennen-Modus (siehe hidden_for).
-    Category("pace", "Spielzeit und Tempo", True),
+    # Spielzeit: für andere nur bei eingeschaltetem Rennen-Modus sichtbar (siehe hidden_for).
+    Category("pace", "Spielzeit", True),
+    # Tempo (XP pro Stunde, Zeit bis zum Maximallevel): unabhängig vom Rennen-Modus.
+    Category("rate", "Tempo (XP pro Stunde)", True),
     Category("gold", "Gold", False),
     Category("zone", "Aufenthaltsort", True),
     Category("gear", "Ausrüstung", True),
@@ -72,9 +72,9 @@ def _race_enabled(c: Character) -> bool:
 def hidden_for(c: Character, viewer_id: int | None) -> frozenset[str]:
     """Kategorien, die `viewer_id` von diesem Charakter nicht sehen darf (Besitzer: keine).
 
-    Spielzeit (und das daraus berechnete Tempo) wird für andere nur angezeigt, wenn der
-    Rennen-Modus an ist; dort ist der Vergleich der Zweck. Sonst bleibt sie verborgen,
-    auch wenn der Besitzer sie freigegeben hat.
+    Die Spielzeit wird für andere nur angezeigt, wenn der Rennen-Modus an ist; dort ist der
+    Vergleich der Zweck. Sonst bleibt sie verborgen, auch wenn der Besitzer sie freigegeben hat.
+    Das Tempo (XP pro Stunde) gehört nicht dazu: Es wird weiter berechnet und gezeigt.
     """
     if viewer_id is not None and c.user_id == viewer_id:
         return frozenset()

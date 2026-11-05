@@ -70,12 +70,13 @@ describe("Freigaben", () => {
   it("nennt ausgeblendete Kategorien; Spielzeit nur bei eingeschaltetem Rennen-Modus", () => {
     expect(hiddenLabels(["gold", "gear"], false)).toEqual(["Gold", "Ausrüstung"]);
     expect(hiddenLabels(["pace", "gold"], false)).toEqual(["Gold"]);
-    expect(hiddenLabels(["pace"], true)).toEqual(["Spielzeit und Tempo"]);
+    expect(hiddenLabels(["pace"], true)).toEqual(["Spielzeit"]);
+    expect(hiddenLabels(["rate"], false)).toEqual(["Tempo (XP pro Stunde)"]);
     expect(hiddenLabels(undefined, true)).toEqual([]);
   });
 
   it("deckt alle Server-Kategorien ab (server/wowft/privacy.py)", () => {
-    const server = ["pace", "gold", "zone", "gear", "skills", "reputation", "talents", "materials", "deaths", "bosses", "photo"];
+    const server = ["pace", "rate", "gold", "zone", "gear", "skills", "reputation", "talents", "materials", "deaths", "bosses", "photo"];
     expect(SHARE_CATEGORIES.map((c) => c.key).sort()).toEqual([...server].sort());
   });
 });

@@ -3,9 +3,10 @@
 export const SHARE_CATEGORIES: { key: string; label: string; hint?: string }[] = [
   {
     key: "pace",
-    label: "Spielzeit und Tempo",
-    hint: "XP pro Stunde und Zeit bis zum Maximallevel hängen an der Spielzeit. Andere sehen sie nur, wenn der Rennen-Modus an ist.",
+    label: "Spielzeit",
+    hint: "Andere sehen sie nur, wenn der Rennen-Modus an ist.",
   },
+  { key: "rate", label: "Tempo (XP pro Stunde)", hint: "Auch die Zeit bis zum Maximallevel." },
   { key: "gold", label: "Gold" },
   { key: "zone", label: "Aufenthaltsort" },
   { key: "gear", label: "Ausrüstung" },
