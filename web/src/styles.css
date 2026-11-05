@@ -153,5 +153,6 @@ ol.steps li { margin-bottom: 6px; }
 @media (min-width: 720px) { .columns { grid-template-columns: 1fr 1fr; } }
 .meter { margin-bottom: 10px; }
 .bar.thin { height: 6px; margin: 4px 0 0; }
-.list.compact li { padding: 6px 0; }
-.slot { width: 7.5em; flex: none; font-size: .85rem; }
+.list.compact li { padding: 6px 0; flex-wrap: nowrap; }
+.list.compact li > span:not(.slot):not(.when) { flex: 1; min-width: 0; }
+.slot { width: 6.5em; flex: none; font-size: .85rem; }

@@ -1,3 +1,5 @@
+import { useEffect, useRef, useState } from "react";
+
 export interface Series {
   name: string;
   color: string;
@@ -8,11 +10,27 @@ export type Axis = "calendar" | "played";
 
 /** Liniendiagramm Level über Zeit; eine Linie pro Serie. */
 export default function Chart({ series, axis, height = 240 }: { series: Series[]; axis: Axis; height?: number }) {
+  // In echter Breite zeichnen, damit Schrift und Linien auf dem Handy nicht schrumpfen.
+  const box = useRef<HTMLDivElement>(null);
+  const [width, setWidth] = useState(640);
+  useEffect(() => {
+    const el = box.current;
+    if (!el) return;
+    const ro = new ResizeObserver(([e]) => setWidth(Math.max(240, Math.round(e.contentRect.width))));
+    ro.observe(el);
+    return () => ro.disconnect();
+  }, []);
+
   const usable = series.filter((s) => s.points.length > 0);
   const all = usable.flatMap((s) => s.points);
-  if (all.length < 2) return <p className="muted">Für ein Diagramm braucht es mindestens zwei Messpunkte.</p>;
+  if (all.length < 2)
+    return (
+      <div ref={box}>
+        <p className="muted">Für ein Diagramm braucht es mindestens zwei Messpunkte.</p>
+      </div>
+    );
 
-  const W = 640, H = height, L = 34, R = 12, T = 10, B = 26;
+  const W = width, H = Math.min(height, Math.round(width * 0.75)), L = 34, R = 12, T = 10, B = 26;
   const xs = all.map((p) => p.x), ys = all.map((p) => p.y);
   const x0 = Math.min(...xs), x1 = Math.max(...xs);
   const y0 = Math.floor(Math.min(...ys));
@@ -28,7 +46,7 @@ export default function Chart({ series, axis, height = 240 }: { series: Series[]
       : `${Math.round(x / 3600)} Std.`;
 
   return (
-    <>
+    <div ref={box}>
       <svg className="chart" viewBox={`0 0 ${W} ${H}`} role="img" aria-label="Level-Verlauf">
         {ticks.map((y) => (
           <g key={y}>
@@ -62,7 +80,7 @@ export default function Chart({ series, axis, height = 240 }: { series: Series[]
           ))}
         </div>
       )}
-    </>
+    </div>
   );
 }
 
