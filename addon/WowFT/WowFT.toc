@@ -1,4 +1,4 @@
-## Interface: 11507
+## Interface: 16001
 ## Title: WowFT – Freundes-Tracker
 ## Notes: Speichert Level, XP und Spielzeit für die Freundes-Webseite.
 ## Author: ravach0l

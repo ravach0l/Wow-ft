@@ -287,6 +287,12 @@ SlashCmdList.WOWFT = function(input)
   elseif cmd == "snap" then
     TakeSnapshot("manual")
     Print("Snapshot gespeichert. Mit /reload wird er auf die Platte geschrieben.")
+  elseif cmd == "api" then
+    WowFTDB.probe = ns.Collect.Probe()
+    Print(("API-Prüfung gespeichert (%d Funktionen vorhanden, %d fehlen). Jetzt /reload."):format(
+      #WowFTDB.probe.present,
+      #WowFTDB.probe.missing
+    ))
   elseif cmd == "status" then
     if not char then
       Print("Noch nicht initialisiert.")

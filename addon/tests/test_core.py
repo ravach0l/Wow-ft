@@ -248,3 +248,147 @@ def test_settings_commands(lua):
     c = char(lua)
     assert c.snapshots[2].gold is None
     assert c.materials is None
+
+
+FOREVER_API = r"""
+-- Forever (Client 1.60.1, Interface 16001): alte Classic-Funktionen fehlen, neue Namensräume da.
+GetNumSkillLines, GetSkillLineInfo, GetNumFactions, GetFactionInfo = nil, nil, nil, nil
+GetNumTalentTabs, GetTalentTabInfo, GetNumTalents, GetTalentInfo = nil, nil, nil, nil
+GetItemInfoInstant, GetContainerNumSlots, GetContainerItemInfo = nil, nil, nil
+
+function GetProfessions() return 4, nil, nil, 7, 8 end
+local profs = { [4] = { "Kräuterkunde", 1, 75, 150 }, [7] = { "Angeln", 1, 10, 75 }, [8] = { "Kochen", 1, 5, 75 } }
+function GetProfessionInfo(i) local p = profs[i]; return p[1], p[2], p[3], p[4] end
+
+C_Reputation = {
+  GetNumFactions = function() return 3 end,
+  GetFactionDataByIndex = function(i)
+    return ({
+      { name = "Horde", isHeader = true, isHeaderWithRep = false },
+      { name = "Orgrimmar", factionID = 76, reaction = 5, currentStanding = 4200,
+        currentReactionThreshold = 3000, nextReactionThreshold = 9000, isHeader = false },
+      { name = "Darnassus", factionID = 69, reaction = 4, currentStanding = 0,
+        currentReactionThreshold = 0, nextReactionThreshold = 3000, isHeader = true, isHeaderWithRep = true },
+    })[i]
+  end,
+}
+
+C_ClassTalents = { GetActiveConfigID = function() return 456595 end }
+C_SpecializationInfo = {
+  GetSpecialization = function() return 1 end,
+  GetSpecializationInfo = function() return 102, "Gleichgewicht" end,
+}
+C_Spell = { GetSpellName = function(id) return "Zauber " .. id end }
+C_Traits = {
+  GetConfigInfo = function() return { treeIDs = { 672 } } end,
+  GetTreeNodes = function() return { 10, 11, 12 } end,
+  GetNodeInfo = function(_, nodeID)
+    return ({
+      [10] = { currentRank = 2, maxRanks = 3, entryIDs = { 100 }, posX = 1, posY = 2 },
+      [11] = { currentRank = 0, maxRanks = 1, entryIDs = { 101 }, posX = 2, posY = 2 },
+      [12] = { currentRank = 1, maxRanks = 1, activeEntry = { entryID = 102 }, entryIDs = { 102, 103 }, posX = 3, posY = 5 },
+    })[nodeID]
+  end,
+  GetEntryInfo = function(_, entryID) return { definitionID = entryID + 1000 } end,
+  GetDefinitionInfo = function(defID)
+    if defID == 1102 then return { overrideName = "Mondfeuer" } end
+    return { spellID = defID }
+  end,
+}
+
+C_Item = { GetItemInfoInstant = function(id) return id, "", "", "", 0, (id == 2589) and 7 or 2 end }
+C_Container = {
+  GetContainerNumSlots = function(bag) return bag == 0 and 2 or 0 end,
+  GetContainerItemInfo = function(_, slot)
+    return ({ { itemID = 2589, stackCount = 12, hyperlink = "|Hitem:2589|h[Leinenstoff]|h" },
+              { itemID = 6948, stackCount = 1, hyperlink = "|Hitem:6948|h[Ruhestein]|h" } })[slot]
+  end,
+}
+"""
+
+
+def test_collectors_with_forever_api(lua):
+    lua.execute(FOREVER_API)
+    skills = lua.eval("NS.Collect.Skills()")
+    assert [(s.name, s.rank, s.max, s.header) for s in skills.values()] == [
+        ("Kräuterkunde", 75, 150, "Berufe"),
+        ("Angeln", 10, 75, "Nebenberufe"),
+        ("Kochen", 5, 75, "Nebenberufe"),
+    ]
+
+    rep = lua.eval("NS.Collect.Reputation()")
+    assert [(r.id, r.name, r.standing, r.value, r.min, r.max) for r in rep.values()] == [
+        (76, "Orgrimmar", 5, 4200, 3000, 9000),
+        (69, "Darnassus", 4, 0, 0, 3000),
+    ]
+
+    tabs = lua.eval("NS.Collect.Talents()")
+    tab = tabs[1]
+    assert (tab.name, tab.points) == ("Gleichgewicht", 3)
+    talents = list(tab.talents.values())
+    assert [(t.name, t.rank, t.max) for t in talents] == [("Zauber 1100", 2, 3), ("Mondfeuer", 1, 1)]
+
+    mats = lua.eval("NS.Collect.Materials({0})")
+    assert [(m.id, m.name, m.count) for m in mats.values()] == [(2589, "Leinenstoff", 12)]
+
+
+def test_all_collectors_report_no_errors_with_forever_api(lua):
+    lua.execute(FOREVER_API)
+    lua.execute("FIRE('PLAYER_LOGIN'); NS.Collect.All(NS.CurrentCharacter())")
+    errors = char(lua).apiErrors
+    assert not list(errors.keys()), dict(errors)
+
+
+UI_STUBS = r"""
+local function stub()
+  local o = { scripts = {}, shown = true, points = {} }
+  setmetatable(o, { __index = function(t) return function() return t end end })
+  function o:SetScript(name, fn) self.scripts[name] = fn end
+  function o:SetShown(s) self.shown = s end
+  function o:IsShown() return self.shown end
+  function o:CreateTexture() return stub() end
+  function o:GetWidth() return 140 end
+  function o:GetCenter() return 0, 0 end
+  function o:GetEffectiveScale() return 1 end
+  return o
+end
+Minimap = stub()
+BUTTON = nil
+function CreateFrame(_, name) local f = stub(); if name == "WowFTMinimapButton" then BUTTON = f end return f end
+function GetCursorPosition() return CURSOR[1], CURSOR[2] end
+CURSOR = { 0, 200 }
+TIP = {}
+GameTooltip = {
+  SetOwner = function(_, owner) TIP.owner = owner; TIP.lines = {} end,
+  AddLine = function(_, text) TIP.lines[#TIP.lines + 1] = text end,
+  Show = function() end, Hide = function() TIP.owner = nil end,
+  GetOwner = function() return TIP.owner end,
+}
+"""
+
+
+def test_minimap_button(lua):
+    lua.execute(UI_STUBS)
+    loader = lua.eval("function(src, name) return load(src, '@' .. name) end")
+    loader((ADDON / "UI.lua").read_text(), "UI.lua")("WowFT", lua.globals().NS)
+    lua.execute("FIRE('PLAYER_LOGIN')")
+
+    assert lua.eval("BUTTON ~= nil")
+    # Tooltip: Level, XP-Anteil (500 von 8800) und Snapshot-Stand.
+    lua.execute("BUTTON.scripts.OnEnter(BUTTON)")
+    tip = " | ".join(lua.eval("TIP.lines").values())
+    assert "WowFT" in tip and "Level 12 · 5% XP" in tip and "Snapshot" in tip
+
+    # Linksklick = Status im Chat.
+    lua.execute("BUTTON.scripts.OnClick(BUTTON, 'LeftButton')")
+    assert "Snapshots" in lua.eval("WOWSTATE.lastMessage")
+
+    # Ziehen: Cursor direkt über der Minimap-Mitte -> 90 Grad, wird gemerkt.
+    lua.execute("BUTTON.scripts.OnDragStart(BUTTON); BUTTON.scripts.OnUpdate(BUTTON)")
+    assert lua.eval("WowFTDB.ui.minimapAngle") == pytest.approx(90)
+
+    # /ft hide blendet den Button aus, /ft show wieder ein.
+    lua.execute("SlashCmdList.WOWFT('hide')")
+    assert lua.eval("BUTTON.shown") is False and lua.eval("WowFTDB.ui.shown") is False
+    lua.execute("SlashCmdList.WOWFT('show')")
+    assert lua.eval("BUTTON.shown") is True

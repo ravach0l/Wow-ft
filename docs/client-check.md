@@ -16,7 +16,7 @@ Interface-Nummer in der `.toc` und welche Erweiterungen aus Phase 4 machbar sind
 
 | Prüfung | Befehl | Ergebnis |
 |---|---|---|
-| Interface-Nummer | `/dump select(4, GetBuildInfo())` | (in `.toc` eintragen, aktuell 11507) |
+| Interface-Nummer | `/dump select(4, GetBuildInfo())` | 16001 (Build 1.60.1.70790, aus den .toc-Dateien installierter Addons und .build.info; im Spiel gegenprüfen) |
 | Ordnername der Spielversion | Explorer: `World of Warcraft\_????_` | |
 | GUID-Format | `/dump UnitGUID("player")` | |
 | Realm-Name (was kommt zurück?) | `/dump GetRealmName()` | |

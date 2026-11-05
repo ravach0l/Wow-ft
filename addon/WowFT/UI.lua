@@ -1,117 +1,129 @@
--- Kleines Statusfenster: eigenes Level, XP mit erholtem Anteil, letzter Snapshot.
+-- Minimap-Button statt eigener XP-Leiste: Tooltip mit Level, XP und Sync-Stand.
+-- Linksklick: Status im Chat · Rechtsklick: Foto · Ziehen: um die Minimap schieben.
+-- Läuft ohne Fremdbibliotheken (kein LibDBIcon).
 local _, ns = ...
 local Util = ns.Util
 
 local UI = {}
 ns.UI = UI
 
-local frame, xpBar, restedBar, levelText, xpText, infoText
+local button
+local RADIUS_OFFSET = 5
+local DEFAULT_ANGLE = 215 -- Grad, unten links wie bei den meisten Addons
+local atan2 = math.atan2 or math.atan
 
-local function SavePosition()
-  local point, _, relPoint, x, y = frame:GetPoint(1)
-  ns.db.ui.point = { point, relPoint, x, y }
+local function PlaceButton()
+  local angle = math.rad(ns.db.ui.minimapAngle or DEFAULT_ANGLE)
+  local radius = (Minimap:GetWidth() / 2) + RADIUS_OFFSET
+  button:ClearAllPoints()
+  button:SetPoint("CENTER", Minimap, "CENTER", math.cos(angle) * radius, math.sin(angle) * radius)
 end
 
-local function Build()
-  frame = CreateFrame("Frame", "WowFTStatusFrame", UIParent, BackdropTemplateMixin and "BackdropTemplate" or nil)
-  frame:SetSize(200, 58)
-  frame:SetFrameStrata("MEDIUM")
-  frame:SetClampedToScreen(true)
-  frame:SetMovable(true)
-  frame:EnableMouse(true)
-  frame:RegisterForDrag("LeftButton")
-  frame:SetScript("OnDragStart", frame.StartMoving)
-  frame:SetScript("OnDragStop", function(self)
-    self:StopMovingOrSizing()
-    SavePosition()
-  end)
-  frame:SetBackdrop({
-    bgFile = "Interface\\Tooltips\\UI-Tooltip-Background",
-    edgeFile = "Interface\\Tooltips\\UI-Tooltip-Border",
-    edgeSize = 12,
-    insets = { left = 3, right = 3, top = 3, bottom = 3 },
-  })
-  frame:SetBackdropColor(0, 0, 0, 0.75)
-
-  levelText = frame:CreateFontString(nil, "OVERLAY", "GameFontNormal")
-  levelText:SetPoint("TOPLEFT", 8, -7)
-
-  xpText = frame:CreateFontString(nil, "OVERLAY", "GameFontHighlightSmall")
-  xpText:SetPoint("TOPRIGHT", -8, -8)
-
-  restedBar = CreateFrame("StatusBar", nil, frame)
-  restedBar:SetPoint("TOPLEFT", 8, -24)
-  restedBar:SetPoint("TOPRIGHT", -8, -24)
-  restedBar:SetHeight(8)
-  restedBar:SetStatusBarTexture("Interface\\TargetingFrame\\UI-StatusBar")
-  restedBar:SetStatusBarColor(0.35, 0.55, 1, 0.45)
-
-  xpBar = CreateFrame("StatusBar", nil, restedBar)
-  xpBar:SetAllPoints(restedBar)
-  xpBar:SetStatusBarTexture("Interface\\TargetingFrame\\UI-StatusBar")
-  xpBar:SetStatusBarColor(0.58, 0.3, 0.9, 1)
-
-  local bg = restedBar:CreateTexture(nil, "BACKGROUND")
-  bg:SetAllPoints()
-  bg:SetColorTexture(1, 1, 1, 0.08)
-
-  infoText = frame:CreateFontString(nil, "OVERLAY", "GameFontDisableSmall")
-  infoText:SetPoint("BOTTOMLEFT", 8, 7)
-  infoText:SetPoint("BOTTOMRIGHT", -8, 7)
-  infoText:SetJustifyH("LEFT")
-
-  frame:SetScript("OnEnter", function(self)
-    GameTooltip:SetOwner(self, "ANCHOR_BOTTOM")
-    GameTooltip:AddLine("WowFT")
-    GameTooltip:AddLine("Das Spiel speichert nur bei Logout oder /reload.", 1, 1, 1, true)
-    GameTooltip:AddLine("Erst danach kann der Uploader den Stand senden.", 1, 1, 1, true)
-    GameTooltip:Show()
-  end)
-  frame:SetScript("OnLeave", function()
-    GameTooltip:Hide()
-  end)
+local function UpdateAngleFromCursor()
+  local mx, my = Minimap:GetCenter()
+  local cx, cy = GetCursorPosition()
+  local scale = Minimap:GetEffectiveScale()
+  ns.db.ui.minimapAngle = math.deg(atan2(cy / scale - my, cx / scale - mx)) % 360
+  PlaceButton()
 end
 
-function UI.Refresh()
-  if not frame or not frame:IsShown() then
-    return
+local function ShowTooltip(self)
+  GameTooltip:SetOwner(self, "ANCHOR_LEFT")
+  GameTooltip:AddLine("WowFT")
+
+  local xpMax = UnitXPMax("player")
+  if xpMax and xpMax > 0 then
+    GameTooltip:AddLine(
+      ("Level %d · %d%% XP"):format(UnitLevel("player"), math.floor(UnitXP("player") / xpMax * 100)),
+      1, 1, 1
+    )
+  else
+    GameTooltip:AddLine(("Level %d"):format(UnitLevel("player")), 1, 1, 1)
   end
-  local level = UnitLevel("player")
-  local xp, xpMax = UnitXP("player"), UnitXPMax("player")
-  local rested = GetXPExhaustion() or 0
-  local max = xpMax > 0 and xpMax or 1
-
-  levelText:SetText(("Level %d"):format(level))
-  xpText:SetText(("%d%%"):format(math.floor(xp / max * 100)))
-  xpBar:SetMinMaxValues(0, max)
-  xpBar:SetValue(xp)
-  restedBar:SetMinMaxValues(0, max)
-  restedBar:SetValue(math.min(max, xp + rested))
 
   local char = ns.CurrentCharacter()
   local last = char and char.snapshots[#char.snapshots]
   if last then
-    infoText:SetText("Snapshot " .. Util.Ago(time() - last.t) .. " · /reload = Sync")
+    GameTooltip:AddLine("Letzter Snapshot: " .. Util.Ago(time() - last.t), 0.8, 0.8, 0.8)
   else
-    infoText:SetText("Noch kein Snapshot")
+    GameTooltip:AddLine("Noch kein Snapshot", 0.8, 0.8, 0.8)
+  end
+  GameTooltip:AddLine("Gesendet wird erst nach Logout oder /reload.", 0.6, 0.6, 0.6, true)
+
+  local errors = char and char.apiErrors
+  if errors and next(errors) then
+    local keys = {}
+    for key in pairs(errors) do
+      keys[#keys + 1] = key
+    end
+    table.sort(keys)
+    GameTooltip:AddLine("API-Problem bei: " .. table.concat(keys, ", "), 1, 0.4, 0.4, true)
+  end
+
+  GameTooltip:AddLine(" ")
+  GameTooltip:AddLine("Linksklick: Status im Chat", 0.5, 0.8, 1)
+  GameTooltip:AddLine("Rechtsklick: Foto aufnehmen", 0.5, 0.8, 1)
+  GameTooltip:AddLine("Ziehen: Button verschieben", 0.5, 0.8, 1)
+  GameTooltip:Show()
+end
+
+local function Build()
+  button = CreateFrame("Button", "WowFTMinimapButton", Minimap)
+  button:SetSize(31, 31)
+  button:SetFrameStrata("MEDIUM")
+  button:SetFrameLevel(8)
+  button:SetClampedToScreen(true)
+  button:RegisterForClicks("LeftButtonUp", "RightButtonUp")
+  button:RegisterForDrag("LeftButton")
+  button:SetHighlightTexture("Interface\\Minimap\\UI-Minimap-ZoomButton-Highlight")
+
+  local icon = button:CreateTexture(nil, "BACKGROUND")
+  icon:SetSize(20, 20)
+  icon:SetPoint("CENTER", 0, 1)
+  icon:SetTexture("Interface\\Icons\\INV_Misc_Book_09")
+  icon:SetTexCoord(0.08, 0.92, 0.08, 0.92)
+
+  local border = button:CreateTexture(nil, "OVERLAY")
+  border:SetSize(53, 53)
+  border:SetPoint("TOPLEFT")
+  border:SetTexture("Interface\\Minimap\\MiniMap-TrackingBorder")
+
+  button:SetScript("OnClick", function(_, mouseButton)
+    if mouseButton == "RightButton" then
+      ns.Photo.Open()
+    else
+      SlashCmdList.WOWFT("status")
+    end
+  end)
+  button:SetScript("OnDragStart", function(self)
+    GameTooltip:Hide()
+    self:SetScript("OnUpdate", UpdateAngleFromCursor)
+  end)
+  button:SetScript("OnDragStop", function(self)
+    self:SetScript("OnUpdate", nil)
+  end)
+  button:SetScript("OnEnter", ShowTooltip)
+  button:SetScript("OnLeave", function()
+    GameTooltip:Hide()
+  end)
+end
+
+-- Der Tooltip liest seine Werte beim Öffnen; hier nur aktualisieren, falls er gerade offen ist.
+function UI.Refresh()
+  if button and button:IsShown() and GameTooltip:GetOwner() == button then
+    ShowTooltip(button)
   end
 end
 
 function UI.SetShown(shown)
   ns.db.ui.shown = shown
-  frame:SetShown(shown)
-  UI.Refresh()
+  if button then
+    button:SetShown(shown)
+  end
 end
 
 function UI.Init()
   Build()
-  local p = ns.db.ui.point
-  if p then
-    frame:SetPoint(p[1], UIParent, p[2], p[3], p[4])
-  else
-    frame:SetPoint("TOP", UIParent, "TOP", 0, -120)
-  end
-  frame:SetShown(ns.db.ui.shown ~= false)
-  UI.Refresh()
-  C_Timer.NewTicker(30, UI.Refresh)
+  PlaceButton()
+  button:SetShown(ns.db.ui.shown ~= false)
 end
