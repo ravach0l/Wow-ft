@@ -27,6 +27,10 @@ Interface-Nummer in der `.toc` und welche Erweiterungen aus Phase 4 machbar sind
 | `/played` | `/dump RequestTimePlayed` | |
 | SavedVariables-Bug behoben? | `/ft snap`, `/reload`, Spiel neu starten, `/ft status` | |
 | Taschen-API (Phase 4) | `/dump C_Container ~= nil` | |
+| Phase-4-Sammler insgesamt | `/ft status` zeigt „API-Problem bei …“, falls etwas fehlt | |
+| Boss-Kills | Dungeon-Boss legen, `/reload`, Feed prüfen (`ENCOUNTER_END` vorhanden?) | |
+| Foto | `/ft foto` → „Foto aufnehmen“ – darf ein Addon `Screenshot()` aufrufen? | |
+| Screenshot-Format | Ordner `Screenshots`: .jpg? (TGA wird nicht unterstützt) | |
 | Skill-API (Phase 4) | `/dump GetSkillLineInfo(1)` | |
 | Battle.net-Addon-Nachrichten (Phase 5) | `/dump BNSendGameData ~= nil` | |
 | Profil-API von Blizzard für Forever? | Web-Recherche | |

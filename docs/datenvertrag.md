@@ -62,11 +62,43 @@ Snapshots entstehen bei Login (nach der `/played`-Antwort), Level-Up, Zonenwechs
 
 `{ t, level, playedTotal }` – wird nie gekürzt.
 
+### Phase 4 (alles optional, pro Charakter)
+
+| Feld | Inhalt | Herkunft | Wann |
+|---|---|---|---|
+| `deaths` | Anzahl Tode | `PLAYER_DEAD` | laufend |
+| `deathLog` | `{ t, level, zone }`, max. 50 | `PLAYER_DEAD` | laufend |
+| `bossKills` | `{ t, id, name, instance, level }`, max. 100 | `ENCOUNTER_END` (success) | laufend |
+| `skills` | `{ name, rank, max, header }` | `GetSkillLineInfo` | Login, Änderung, Logout |
+| `equipment` | `{ slot, id, name, quality }` | `GetInventoryItemLink/Quality` | dto. |
+| `reputation` | `{ id, name, standing, value, min, max }` | `GetFactionInfo` | dto. |
+| `talents` | `{ name, points, talents = { {name, rank, max, tier, col} } }` | `GetTalentInfo` | dto. |
+| `materials` | `{ bags = {…}, bank = {…}, bankScanned }`, Einträge `{ id, name, count }` | Taschen-API, nur Item-Klasse 7 (Handwerkswaren) | Taschen laufend, Bank beim Öffnen |
+| `photoRequests` | Zeitpunkte von `/ft foto`-Screenshots, max. 20 | `SCREENSHOT_SUCCEEDED` | bei `/ft foto` |
+| `settings` | `trackGold`, `trackMaterials` | `/ft gold an\|aus`, `/ft material an\|aus` | |
+| `apiErrors` | Fehlermeldung je Sammler, falls die Forever-API abweicht | `pcall` | nur zur Diagnose, Server ignoriert es |
+
+Snapshots enthalten zusätzlich `gold` (Kupfer, `GetMoney`), außer bei `/ft gold aus`.
+Auf der Webseite ist Gold standardmäßig verborgen (pro Charakter freischaltbar).
+
+Der Server speichert den jüngsten Stand am Charakter und erzeugt Feed-Ereignisse aus
+Änderungen: Beruf über 75/150/225/300, neues Item ab „selten“, Ruf ab „Wohlwollend“.
+Der erste Upload eines Abschnitts erzeugt keine solchen Ereignisse.
+
+### Fotos
+
+1. `/ft foto` zeigt das 3D-Modell vor neutralem Hintergrund; „Foto aufnehmen“ löst einen Screenshot aus
+   (sonst die Screenshot-Taste). Der Zeitpunkt landet in `photoRequests`.
+2. Nach `/reload` antwortet `POST /api/ingest` mit `photoRequests` (noch fehlende Fotos).
+3. Der Uploader sucht in `<Spielordner>/Screenshots` das JPG/PNG mit Dateizeit −10 s…+90 s,
+   schneidet die Mitte im Format 3:4 aus, verkleinert auf 600×800 und schickt es an
+   `POST /api/characters/{id}/photos?t=<Zeitpunkt>`.
+
 ## Regeln
 
 - Zeiten sind Unix-Sekunden (UTC).
 - Der Server ignoriert unbekannte Felder; neue optionale Felder brauchen kein neues Schema.
-- Eindeutigkeit auf dem Server: Snapshot (Charakter, `t`), Ereignis (Charakter, `t`, Typ).
+- Eindeutigkeit auf dem Server: Snapshot (Charakter, `t`), Ereignis (Charakter, `t`, Typ, Schlüssel).
   Doppelte Uploads sind deshalb harmlos.
 - Eine GUID gehört dem Konto, das sie zuerst hochgeladen hat. Uploads derselben GUID
   von einem anderen Konto werden übersprungen (Antwortfeld `skipped`).

@@ -1,58 +1,82 @@
 import { useState } from "react";
 import { useParams } from "react-router-dom";
 import { XpBar } from "../components/CharacterCard";
+import Chart, { AxisToggle, type Axis } from "../components/Chart";
 import EventLine from "../components/EventLine";
-import LevelChart from "../components/LevelChart";
-import { ago, duration, gold, number } from "../format";
+import { ago, dateTime, duration, gold, number } from "../format";
 import { useApi } from "../hooks";
-import type { History } from "../types";
-import { classColor, className, raceName } from "../wow";
+import type { CharacterDetailState, History, Skill } from "../types";
+import { classColor, className, qualityColor, raceName } from "../wow";
 
 export default function CharacterPage() {
   const { charId } = useParams();
   const { data, error } = useApi<History>(`/api/characters/${charId}/history`);
-  const [axis, setAxis] = useState<"calendar" | "played">("played");
+  const [axis, setAxis] = useState<Axis>("played");
+  const [photoIdx, setPhotoIdx] = useState(0);
 
   if (error) return <p className="error">{error.message}</p>;
   if (!data) return <p className="muted">Lädt …</p>;
   const c = data.character;
   if (!c) return <p className="muted">Für diesen Charakter gibt es noch keine Daten.</p>;
+  const color = classColor(c.class);
+  const photo = data.photos[photoIdx] ?? data.photos[0];
+  const points = data.snapshots
+    .map((s) => ({ x: axis === "calendar" ? s.ts : s.playedTotal, y: s.level + (s.xpMax > 0 ? s.xp / s.xpMax : 0) }))
+    .filter((p): p is { x: number; y: number } => p.x != null);
 
   return (
     <>
-      <div className="card" style={{ marginBottom: 14 }}>
-        <div className="card-head">
-          <div className="avatar" style={{ color: classColor(c.class) }} aria-hidden>{c.name.slice(0, 1)}</div>
-          <div className="who">
-            <h1 className="cname" style={{ color: classColor(c.class) }}>{c.name}</h1>
-            <div className="meta">
-              {raceName(c.race)} {className(c.class)} · {c.ownerName}
-              {c.zone ? ` · ${c.zone}` : ""} · {ago(c.ts)}
+      <div className={`hero${photo ? " with-photo" : ""}`}>
+        {photo && (
+          <figure className="photo">
+            <img src={photo.url} alt={`${c.name} mit Level ${photo.level ?? "?"}`} />
+            <figcaption>{photo.level ? `Level ${photo.level} · ` : ""}{dateTime(photo.ts)}</figcaption>
+          </figure>
+        )}
+        <div className="card">
+          <div className="card-head">
+            {!photo && <div className="avatar" style={{ color }} aria-hidden>{c.name.slice(0, 1)}</div>}
+            <div className="who">
+              <h1 className="cname" style={{ color }}>{c.name}</h1>
+              <div className="meta">
+                {raceName(c.race)} {className(c.class)} · {c.ownerName}
+                {c.zone ? ` · ${c.zone}` : ""} · {ago(c.ts)}
+              </div>
             </div>
+            <div className="level">{c.level}<small>Level</small></div>
           </div>
-          <div className="level">{c.level}<small>Level</small></div>
+          <XpBar c={c} />
+          <div className="stats">
+            <Stat k="XP pro Stunde" v={number(c.xpPerHour)} />
+            <Stat k="bis Level 60 (Spielzeit)" v={duration(c.etaSeconds)} />
+            <Stat k="Spielzeit gesamt" v={duration(c.playedTotal)} />
+            <Stat k="Spielzeit im Level" v={duration(c.playedLevel)} />
+            {c.deaths != null && <Stat k="Tode" v={number(c.deaths)} />}
+            {c.gold != null && <Stat k="Gold" v={gold(c.gold)} />}
+          </div>
         </div>
-        <XpBar c={c} />
       </div>
 
-      <div className="stats">
-        <Stat k="XP pro Stunde" v={number(c.xpPerHour)} />
-        <Stat k="bis Level 60 (Spielzeit)" v={duration(c.etaSeconds)} />
-        <Stat k="Spielzeit gesamt" v={duration(c.playedTotal)} />
-        <Stat k="Spielzeit im Level" v={duration(c.playedLevel)} />
-        {c.gold != null && <Stat k="Gold" v={gold(c.gold)} />}
-      </div>
+      {data.photos.length > 1 && (
+        <div className="gallery" aria-label="Ältere Bilder">
+          {data.photos.map((p, i) => (
+            <button key={p.id} aria-pressed={i === photoIdx} onClick={() => setPhotoIdx(i)}>
+              <img src={p.url} alt="" loading="lazy" />
+              <span>{p.level ? `Lv ${p.level}` : dateTime(p.ts)}</span>
+            </button>
+          ))}
+        </div>
+      )}
 
       <div className="section">
         <div className="toolbar" style={{ justifyContent: "space-between" }}>
           <h2 style={{ margin: 0 }}>Level-Verlauf</h2>
-          <div className="seg" role="group" aria-label="x-Achse">
-            <button aria-pressed={axis === "played"} onClick={() => setAxis("played")}>Spielzeit</button>
-            <button aria-pressed={axis === "calendar"} onClick={() => setAxis("calendar")}>Kalender</button>
-          </div>
+          <AxisToggle axis={axis} onChange={setAxis} />
         </div>
-        <LevelChart snapshots={data.snapshots} axis={axis} />
+        <Chart series={[{ name: c.name, color: "var(--accent)", points }]} axis={axis} />
       </div>
+
+      <StateSections state={data.state} />
 
       <div className="section">
         <h2>Ereignisse</h2>
@@ -65,6 +89,125 @@ export default function CharacterPage() {
         )}
       </div>
     </>
+  );
+}
+
+function StateSections({ state }: { state: CharacterDetailState }) {
+  const groups: [Skill["category"], string][] = [
+    ["profession", "Berufe"],
+    ["secondary", "Sekundäre Fertigkeiten"],
+    ["weapon", "Waffenfertigkeiten"],
+  ];
+  const mats = state.materials;
+  return (
+    <div className="columns">
+      {state.equipment.length > 0 && (
+        <div className="section">
+          <h2>Ausrüstung</h2>
+          <ul className="list compact">
+            {state.equipment.map((e) => (
+              <li key={e.slot}>
+                <span className="muted slot">{e.slotName}</span>
+                <span style={{ color: qualityColor(e.quality) }}>{e.name ?? "?"}</span>
+              </li>
+            ))}
+          </ul>
+        </div>
+      )}
+
+      {state.skills.length > 0 && (
+        <div className="section">
+          {groups.map(([cat, title]) => {
+            const list = state.skills.filter((s) => s.category === cat);
+            if (list.length === 0) return null;
+            return (
+              <div key={cat} style={{ marginBottom: 14 }}>
+                <h2>{title}</h2>
+                {list.map((s) => (
+                  <Meter key={s.name} label={s.name} value={s.rank} max={s.max || 300} />
+                ))}
+              </div>
+            );
+          })}
+        </div>
+      )}
+
+      {state.talents.some((t) => t.points > 0) && (
+        <div className="section">
+          <h2>Talente</h2>
+          <p style={{ color: "var(--text)" }}>{state.talents.map((t) => t.points).join(" / ")}</p>
+          {state.talents
+            .filter((t) => t.talents.length > 0)
+            .map((t) => (
+              <div key={t.name ?? ""} style={{ marginBottom: 10 }}>
+                <div className="meta">{t.name} ({t.points})</div>
+                <div>{t.talents.map((x) => `${x.name} ${x.rank}/${x.max ?? "?"}`).join(", ")}</div>
+              </div>
+            ))}
+        </div>
+      )}
+
+      {state.reputation.length > 0 && (
+        <div className="section">
+          <h2>Ruf</h2>
+          {state.reputation.map((r) => (
+            <Meter
+              key={r.id ?? r.name}
+              label={`${r.name} · ${r.standingName}`}
+              value={(r.value ?? 0) - (r.min ?? 0)}
+              max={Math.max(1, (r.max ?? 1) - (r.min ?? 0))}
+              showNumbers={false}
+            />
+          ))}
+        </div>
+      )}
+
+      {mats && (mats.bags.length > 0 || (mats.bank?.length ?? 0) > 0) && (
+        <div className="section">
+          <h2>Handwerksmaterialien</h2>
+          <ul className="list compact">
+            {mergeMaterials(mats.bags, mats.bank ?? []).map((m) => (
+              <li key={m.id}>
+                <span>{m.name ?? `Item ${m.id}`}</span>
+                <span className="when">{number(m.bags + m.bank)}</span>
+              </li>
+            ))}
+          </ul>
+          <p className="muted" style={{ marginTop: 8, marginBottom: 0 }}>
+            Bank zuletzt gelesen: {mats.bankScanned ? ago(mats.bankScanned) : "nie"}
+          </p>
+        </div>
+      )}
+    </div>
+  );
+}
+
+export function mergeMaterials(
+  bags: { id: number; name: string | null; count: number }[],
+  bank: { id: number; name: string | null; count: number }[],
+) {
+  const out = new Map<number, { id: number; name: string | null; bags: number; bank: number }>();
+  for (const [list, key] of [[bags, "bags"], [bank, "bank"]] as const) {
+    for (const m of list) {
+      const e = out.get(m.id) ?? { id: m.id, name: m.name, bags: 0, bank: 0 };
+      e[key] += m.count;
+      e.name = e.name ?? m.name;
+      out.set(m.id, e);
+    }
+  }
+  return [...out.values()].sort((a, b) => (a.name ?? "").localeCompare(b.name ?? ""));
+}
+
+function Meter({ label, value, max, showNumbers = true }: { label: string; value: number; max: number; showNumbers?: boolean }) {
+  const pct = Math.min(100, (value / max) * 100);
+  return (
+    <div className="meter">
+      <div className="row">
+        <span style={{ color: "var(--text)" }}>{label}</span>
+        {showNumbers && <span>{value} / {max}</span>}
+      </div>
+      <div className="bar thin"><span className="xp" style={{ width: `${pct}%` }} /></div>
+    </div>
   );
 }
 

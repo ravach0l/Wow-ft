@@ -96,6 +96,7 @@ func run() int {
 			return 1
 		}
 		failed := false
+		w := NewWatcher(cfg, client, statePath, logger)
 		for _, f := range files {
 			content, err := os.ReadFile(f)
 			if err != nil {
@@ -111,6 +112,7 @@ func run() int {
 			}
 			logger.Printf("%s: %d Charakter(e), %d neue Snapshots, %d neue Ereignisse",
 				f, res.Characters, res.Snapshots, res.Events)
+			w.uploadPhotos(f, res.PhotoRequests)
 		}
 		if failed {
 			return 1

@@ -48,8 +48,14 @@ Legende: **Größe** S ≈ 1–2 h, M ≈ halber Tag, L ≈ ganzer Tag.
 | 2.1–2.9 Server, Uploader, Übersicht, Deployment | erledigt (Uploader in Go statt Python) |
 | 3.1 Authentik-Login, 3.2 Gruppen/Einladungen, 3.3 Tokens, 3.4 Sichtbarkeit, 3.6 manueller Upload, 3.7 Härtung | erledigt |
 | 3.5 Uploader für Freunde | Einrichtungsdialog, Autostart (Windows: Registry, Linux: systemd/XDG), Release-Builds für Windows, Linux, macOS erledigt; Tray-Symbol offen |
-| 4.1–4.3 Verlauf, Detail, Feed | Grundversion erledigt (Level-Verlauf, Level-Up-Feed) |
-| 4.4–4.6, Phase 5 | offen |
+| 4.1 Verlauf und Rennen-Diagramm | erledigt (Gruppen-Rennen, Achse Spielzeit/Kalender) |
+| 4.2 Charakter-Detail | erledigt (Ausrüstung, Berufe, Talente, Ruf, Material, Tode, Gold, Fotos) |
+| 4.3 Aktivitäts-Feed | erledigt (Level, Beruf, Item, Ruf, Tod, Boss) |
+| 4.4 Addon-Erweiterungen 1–8 | erledigt, im Spiel ungetestet; Dungeons als Boss-Kills (`ENCOUNTER_END`) |
+| 4.4.9 Forever-Sammelziele | offen, bis klar ist, wie die API sie abbildet |
+| 4.5 Charakterbild | erledigt (`/ft foto`, Uploader schneidet zu, Galerie) |
+| 4.6 Discord-Webhook | erledigt (pro Gruppe, nur Ereignisse der letzten 12 h) |
+| Phase 5 | offen |
 
 ---
 

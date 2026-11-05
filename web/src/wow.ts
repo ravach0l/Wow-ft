@@ -34,3 +34,10 @@ export function className(token: string | null): string {
 export function raceName(token: string | null): string {
   return (token && RACE_NAMES[token]) || token || "";
 }
+
+// Item-Qualitäten (Spielkonvention): grau, weiß, grün, blau, lila, orange.
+export const QUALITY_COLORS = ["#9d9d9d", "#ffffff", "#1eff00", "#0070dd", "#a335ee", "#ff8000", "#e6cc80"];
+
+export function qualityColor(q: number | null): string {
+  return q != null && QUALITY_COLORS[q] ? QUALITY_COLORS[q] : "var(--text)";
+}

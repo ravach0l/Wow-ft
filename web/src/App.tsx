@@ -5,8 +5,10 @@ import { storageGet, useApi } from "./hooks";
 import CharacterPage from "./pages/CharacterPage";
 import FeedPage from "./pages/FeedPage";
 import InvitePage from "./pages/InvitePage";
+import MaterialsPage from "./pages/MaterialsPage";
 import OverviewPage from "./pages/OverviewPage";
 import ProfilePage from "./pages/ProfilePage";
+import RacePage from "./pages/RacePage";
 import type { Me } from "./types";
 
 interface MeContextValue {
@@ -37,6 +39,8 @@ export default function App() {
           <Route path="/" element={<Home me={me} />} />
           <Route path="/g/:groupId" element={<OverviewPage />} />
           <Route path="/g/:groupId/feed" element={<FeedPage />} />
+          <Route path="/g/:groupId/rennen" element={<RacePage />} />
+          <Route path="/g/:groupId/material" element={<MaterialsPage />} />
           <Route path="/c/:charId" element={<CharacterPage />} />
           <Route path="/profil" element={<ProfilePage />} />
           <Route path="/invite/:code" element={<InvitePage />} />
@@ -66,8 +70,10 @@ function TopBar({ me }: { me: Me }) {
       <NavLink to="/" className="brand">Freundes-Tracker</NavLink>
       <nav className="nav">
         {gid && <NavLink to={`/g/${gid}`} end>Übersicht</NavLink>}
+        {gid && <NavLink to={`/g/${gid}/rennen`}>Rennen</NavLink>}
+        {gid && <NavLink to={`/g/${gid}/material`}>Material</NavLink>}
         {gid && <NavLink to={`/g/${gid}/feed`}>Feed</NavLink>}
-        <NavLink to="/profil">{me.name}</NavLink>
+        <NavLink to="/profil" className="me">{me.name}</NavLink>
       </nav>
     </header>
   );

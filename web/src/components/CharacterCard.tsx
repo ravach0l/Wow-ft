@@ -23,7 +23,7 @@ export default function CharacterCard({ c, compact = false }: { c: CharacterStat
       <div className="card-head">
         {!compact && (
           <div className="avatar" style={{ color }} aria-hidden>
-            {c.name.slice(0, 1)}
+            {c.photoUrl ? <img src={c.photoUrl} alt="" loading="lazy" /> : c.name.slice(0, 1)}
           </div>
         )}
         <div className="who">
@@ -54,6 +54,7 @@ export default function CharacterCard({ c, compact = false }: { c: CharacterStat
       {!compact && c.playedTotal != null && (
         <div className="row" style={{ marginTop: 4 }}>
           <span>Spielzeit {duration(c.playedTotal)}</span>
+          {c.deaths ? <span>{c.deaths} {c.deaths === 1 ? "Tod" : "Tode"}</span> : null}
         </div>
       )}
     </Link>

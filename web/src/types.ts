@@ -27,6 +27,8 @@ export interface CharacterState {
   xpPerHour: number | null;
   etaSeconds: number | null;
   behindLeader: number;
+  deaths: number | null;
+  photoUrl: string | null;
 }
 
 export interface Overview {
@@ -41,6 +43,7 @@ export interface FeedEvent {
   ts: number;
   type: string;
   data: Record<string, unknown> | null;
+  text: string;
   character: { id: number; name: string; class: string | null };
   ownerName: string;
 }
@@ -49,6 +52,77 @@ export interface History {
   character: CharacterState | null;
   snapshots: { ts: number; level: number; xp: number; xpMax: number; playedTotal: number | null; zone: string | null }[];
   events: FeedEvent[];
+  state: CharacterDetailState;
+  photos: { id: number; url: string; ts: number; level: number | null }[];
+}
+
+export interface Skill {
+  name: string;
+  rank: number;
+  max: number | null;
+  category: "profession" | "secondary" | "weapon";
+}
+
+export interface EquipmentItem {
+  slot: number;
+  slotName: string;
+  id: number | null;
+  name: string | null;
+  quality: number | null;
+}
+
+export interface Reputation {
+  id: number | null;
+  name: string;
+  standing: number;
+  standingName: string;
+  value: number | null;
+  min: number | null;
+  max: number | null;
+}
+
+export interface TalentTab {
+  name: string | null;
+  points: number;
+  talents: { name: string; rank: number; max: number | null }[];
+}
+
+export interface MaterialEntry {
+  id: number;
+  name: string | null;
+  count: number;
+}
+
+export interface CharacterDetailState {
+  skills: Skill[];
+  equipment: EquipmentItem[];
+  reputation: Reputation[];
+  talents: TalentTab[];
+  materials: { bags: MaterialEntry[]; bank: MaterialEntry[] | null; bankScanned: number | null } | null;
+  deaths: number | null;
+}
+
+export interface RaceSeries {
+  id: number;
+  name: string;
+  class: string | null;
+  ownerName: string;
+  points: [number, number | null, number][];
+}
+
+export interface MaterialItem {
+  id: number;
+  name: string | null;
+  total: number;
+  holders: {
+    characterId: number;
+    name: string;
+    class: string | null;
+    ownerName: string;
+    bags: number;
+    bank: number;
+    bankScanned: number | null;
+  }[];
 }
 
 export interface GroupDetail {
@@ -56,6 +130,7 @@ export interface GroupDetail {
   name: string;
   role: "owner" | "member";
   inviteCode?: string;
+  discordWebhook?: string | null;
   members: { id: number; name: string; role: string }[];
 }
 

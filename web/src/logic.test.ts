@@ -1,5 +1,7 @@
 import { describe, expect, it } from "vitest";
 import { ago, duration, gold } from "./format";
+import { mergeMaterials } from "./pages/CharacterPage";
+import { toSeries } from "./pages/RacePage";
 import { groupByOwner } from "./sort";
 import type { CharacterState } from "./types";
 
@@ -8,7 +10,7 @@ function char(p: Partial<CharacterState>): CharacterState {
     id: 1, name: "A", class: "MAGE", race: "Human", faction: "Alliance", region: "EU",
     ownerId: 1, ownerName: "x", ts: 0, lastUpload: 0, level: 1, xp: 0, xpMax: 400, rested: 0,
     zone: null, playedTotal: null, playedLevel: null, gold: null, totalXp: 0, xpPerHour: null,
-    etaSeconds: null, behindLeader: 0, ...p,
+    etaSeconds: null, behindLeader: 0, deaths: null, photoUrl: null, ...p,
   };
 }
 
@@ -44,5 +46,20 @@ describe("groupByOwner", () => {
   });
   it("rate sorts people by their main", () => {
     expect(groupByOwner(chars, "rate").map((p) => p.ownerName)).toEqual(["ben", "anna"]);
+  });
+});
+
+describe("phase 4 helpers", () => {
+  it("toSeries switches axis and drops points without playtime", () => {
+    const race = [{ id: 1, name: "A", class: "MAGE", ownerName: "x", points: [[100, null, 5], [200, 3600, 6.5]] as [number, number | null, number][] }];
+    expect(toSeries(race, "calendar")[0].points).toEqual([{ x: 100, y: 5 }, { x: 200, y: 6.5 }]);
+    expect(toSeries(race, "played")[0].points).toEqual([{ x: 3600, y: 6.5 }]);
+  });
+  it("mergeMaterials adds bags and bank", () => {
+    const m = mergeMaterials([{ id: 1, name: "Erz", count: 3 }], [{ id: 1, name: "Erz", count: 4 }, { id: 2, name: "Stoff", count: 1 }]);
+    expect(m).toEqual([
+      { id: 1, name: "Erz", bags: 3, bank: 4 },
+      { id: 2, name: "Stoff", bags: 0, bank: 1 },
+    ]);
   });
 });

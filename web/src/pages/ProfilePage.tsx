@@ -196,6 +196,7 @@ function GroupAdmin({ id }: { id: number }) {
             ))}
         </ul>
       )}
+      {data.role === "owner" && <DiscordSetting group={data} onSaved={reload} />}
       {data.role !== "owner" && (
         <button className="btn small danger" style={{ marginTop: 10 }} onClick={() => remove(me.id)}>Gruppe verlassen</button>
       )}
@@ -224,5 +225,32 @@ function ManualUpload() {
       <input type="file" accept=".lua" onChange={(e) => e.target.files?.[0] && upload(e.target.files[0])} />
       {msg && <p style={{ marginTop: 10 }}>{msg}</p>}
     </div>
+  );
+}
+
+function DiscordSetting({ group, onSaved }: { group: GroupDetail; onSaved: () => void }) {
+  const [url, setUrl] = useState(group.discordWebhook ?? "");
+  const [msg, setMsg] = useState<string | null>(null);
+  async function save(e: FormEvent) {
+    e.preventDefault();
+    try {
+      await api.patch(`/api/groups/${group.id}`, { discordWebhook: url.trim() });
+      setMsg(url.trim() ? "Gespeichert. Neue Ereignisse landen im Kanal." : "Discord ausgeschaltet.");
+      onSaved();
+    } catch (err) {
+      setMsg((err as Error).message);
+    }
+  }
+  return (
+    <form onSubmit={save} style={{ marginTop: 12 }}>
+      <div className="meta" style={{ marginBottom: 6 }}>
+        Discord-Webhook (Kanal → Einstellungen → Integrationen → Webhooks)
+      </div>
+      <div className="inline-form">
+        <input type="text" placeholder="https://discord.com/api/webhooks/…" value={url} onChange={(e) => setUrl(e.target.value)} />
+        <button className="btn small" type="submit">Speichern</button>
+      </div>
+      {msg && <p className="meta" style={{ marginTop: 6 }}>{msg}</p>}
+    </form>
   );
 }
