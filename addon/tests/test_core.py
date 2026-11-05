@@ -203,6 +203,11 @@ def test_collects_phase4_state(lua):
     assert (eq.slot, eq.id, eq.name, eq.quality) == (16, 2042, "Klinge des Testers", 3)
     assert len(c.reputation) == 1 and c.reputation[1].name == "Sturmwind" and c.reputation[1].standing == 5
     assert c.talents[1].name == "Waffen" and c.talents[1].points == 3
+    # Auch ungelernte Talente (Rang 0) kommen mit, für die Baumansicht.
+    assert [(t.name, t.rank, t.max, t.tier, t.col) for t in c.talents[1].talents.values()] == [
+        ("Verbessertes Heldenhaftes", 3, 3, 1, 1),
+        ("Taktiker", 0, 5, 1, 2),
+    ]
     bags = c.materials.bags
     assert len(bags) == 1 and (bags[1].id, bags[1].name, bags[1].count) == (2770, "Kupfererz", 20)
     assert c.materials.bank is None
@@ -326,7 +331,11 @@ def test_collectors_with_forever_api(lua):
     tab = tabs[1]
     assert (tab.name, tab.points) == ("Gleichgewicht", 3)
     talents = list(tab.talents.values())
-    assert [(t.name, t.rank, t.max) for t in talents] == [("Zauber 1100", 2, 3), ("Mondfeuer", 1, 1)]
+    assert [(t.name, t.rank, t.max) for t in talents] == [
+        ("Zauber 1100", 2, 3),
+        ("Zauber 1101", 0, 1),
+        ("Mondfeuer", 1, 1),
+    ]
 
     mats = lua.eval("NS.Collect.Materials({0})")
     assert [(m.id, m.name, m.count) for m in mats.values()] == [(2589, "Leinenstoff", 12)]

@@ -119,15 +119,16 @@ local function TraitTalents()
     local points, list = 0, {}
     for _, nodeID in ipairs(C_Traits.GetTreeNodes(treeID) or {}) do
       local node = C_Traits.GetNodeInfo(configID, nodeID)
-      if node and (node.currentRank or 0) > 0 then
+      -- Alle Felder, auch ungelernte: Die Webseite zeichnet daraus den Baum.
+      if node and (node.maxRanks or 0) > 0 then
         local entryID = (node.activeEntry and node.activeEntry.entryID) or (node.entryIDs and node.entryIDs[1])
         local entry = entryID and C_Traits.GetEntryInfo(configID, entryID)
         local def = entry and entry.definitionID and C_Traits.GetDefinitionInfo(entry.definitionID)
         local name = def and (def.overrideName or SpellNameById(def.spellID))
-        points = points + node.currentRank
+        points = points + (node.currentRank or 0)
         list[#list + 1] = {
           name = name or ("Talent " .. tostring(nodeID)),
-          rank = node.currentRank,
+          rank = node.currentRank or 0,
           max = node.maxRanks,
           tier = node.posY,
           col = node.posX,
@@ -156,7 +157,8 @@ function Collect.Talents()
     local points, list = 0, {}
     for i = 1, GetNumTalents(tab) do
       local name, _, tier, column, rank, maxRank = GetTalentInfo(tab, i)
-      if name and rank and rank > 0 then
+      if name then
+        rank = rank or 0
         points = points + rank
         list[#list + 1] = { name = name, rank = rank, max = maxRank, tier = tier, col = column }
       end

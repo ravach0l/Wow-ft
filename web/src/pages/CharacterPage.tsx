@@ -7,7 +7,8 @@ import { useMe } from "../App";
 import { ago, dateTime, duration, gold, number } from "../format";
 import { useApi } from "../hooks";
 import { hiddenLabels } from "../privacy";
-import type { CharacterDetailState, History, Skill } from "../types";
+import { talentGrid } from "../talents";
+import type { CharacterDetailState, History, Skill, TalentTab } from "../types";
 import { classColor, className, qualityColor, raceName } from "../wow";
 
 export default function CharacterPage() {
@@ -156,14 +157,11 @@ function StateSections({ state }: { state: CharacterDetailState }) {
         <div className="section">
           <h2>Talente</h2>
           <p style={{ color: "var(--text)" }}>{state.talents.map((t) => t.points).join(" / ")}</p>
-          {state.talents
-            .filter((t) => t.talents.length > 0)
-            .map((t) => (
-              <div key={t.name ?? ""} style={{ marginBottom: 10 }}>
-                <div className="meta">{t.name} ({t.points})</div>
-                <div>{t.talents.map((x) => `${x.name} ${x.rank}/${x.max ?? "?"}`).join(", ")}</div>
-              </div>
-            ))}
+          <div className="trees">
+            {state.talents
+              .filter((t) => t.talents.length > 0)
+              .map((t) => <TalentTree key={t.name ?? ""} tab={t} />)}
+          </div>
         </div>
       )}
 
@@ -216,6 +214,37 @@ export function mergeMaterials(
     }
   }
   return [...out.values()].sort((a, b) => (a.name ?? "").localeCompare(b.name ?? ""));
+}
+
+function TalentTree({ tab }: { tab: TalentTab }) {
+  const grid = talentGrid(tab.talents);
+  return (
+    <figure className="tree">
+      <figcaption className="meta">{tab.name} ({tab.points})</figcaption>
+      <div
+        className="tree-grid"
+        role="list"
+        style={{ gridTemplateColumns: `repeat(${grid.cols}, 52px)`, gridTemplateRows: `repeat(${grid.rows}, auto)` }}
+      >
+        {grid.cells.map(({ talent: x, row, col }) => {
+          const full = x.max != null && x.rank >= x.max;
+          const state = x.rank === 0 ? "none" : full ? "full" : "part";
+          return (
+            <div
+              key={`${row}-${col}-${x.name}`}
+              role="listitem"
+              className={`talent ${state}`}
+              style={{ gridRow: row + 1, gridColumn: col + 1 }}
+              title={`${x.name} ${x.rank}/${x.max ?? "?"}`}
+            >
+              <span className="tname">{x.name}</span>
+              <span className="trank">{x.rank}/{x.max ?? "?"}</span>
+            </div>
+          );
+        })}
+      </div>
+    </figure>
+  );
 }
 
 function Meter({ label, value, max, showNumbers = true }: { label: string; value: number; max: number; showNumbers?: boolean }) {

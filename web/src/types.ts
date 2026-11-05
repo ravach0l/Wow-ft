@@ -86,10 +86,18 @@ export interface Reputation {
   max: number | null;
 }
 
+export interface Talent {
+  name: string;
+  rank: number;
+  max: number | null;
+  tier?: number | null;
+  col?: number | null;
+}
+
 export interface TalentTab {
   name: string | null;
   points: number;
-  talents: { name: string; rank: number; max: number | null }[];
+  talents: Talent[];
 }
 
 export interface MaterialEntry {

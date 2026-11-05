@@ -159,3 +159,18 @@ ol.steps li { margin-bottom: 6px; }
 .list.compact li { padding: 6px 0; flex-wrap: nowrap; }
 .list.compact li > span:not(.slot):not(.when) { flex: 1; min-width: 0; }
 .slot { width: 6.5em; flex: none; font-size: .85rem; }
+
+/* Talentbaum */
+.trees { display: flex; flex-wrap: wrap; gap: 20px; }
+.tree { margin: 0; overflow-x: auto; max-width: 100%; }
+.tree-grid { display: grid; gap: 6px; padding: 6px 0; }
+.talent {
+  position: relative; display: flex; flex-direction: column; align-items: center; justify-content: space-between;
+  width: 52px; min-height: 52px; padding: 4px 2px 2px; border-radius: 8px; text-align: center;
+  background: var(--surface); border: 1px solid var(--line); color: var(--text-2);
+}
+.talent .tname { font-size: 10px; line-height: 1.15; overflow-wrap: anywhere; max-height: 3.5em; overflow: hidden; }
+.talent .trank { font-size: 11px; font-weight: 600; font-variant-numeric: tabular-nums; }
+.talent.none { opacity: .45; }
+.talent.part { border-color: var(--accent); color: var(--text); }
+.talent.full { border-color: var(--accent); background: color-mix(in srgb, var(--accent) 18%, var(--surface)); color: var(--text); }

@@ -2,6 +2,7 @@ import { hiddenLabels, SHARE_CATEGORIES } from "./privacy";
 import { describe, expect, it } from "vitest";
 import { ago, duration, gold } from "./format";
 import { mergeMaterials } from "./pages/CharacterPage";
+import { talentGrid } from "./talents";
 import { toSeries } from "./pages/RacePage";
 import { groupByOwner } from "./sort";
 import type { CharacterState } from "./types";
@@ -78,5 +79,29 @@ describe("Freigaben", () => {
   it("deckt alle Server-Kategorien ab (server/wowft/privacy.py)", () => {
     const server = ["pace", "rate", "gold", "zone", "gear", "skills", "reputation", "talents", "materials", "deaths", "bosses", "photo"];
     expect(SHARE_CATEGORIES.map((c) => c.key).sort()).toEqual([...server].sort());
+  });
+});
+
+describe("talentGrid", () => {
+  it("legt Talente nach Reihe und Spalte ab, unabhängig vom Koordinatensystem", () => {
+    const g = talentGrid([
+      { name: "A", rank: 1, max: 1, tier: 2400, col: 900 },
+      { name: "B", rank: 0, max: 3, tier: 1200, col: 1500 },
+      { name: "C", rank: 2, max: 2, tier: 1200, col: 900 },
+    ]);
+    expect([g.rows, g.cols]).toEqual([2, 2]);
+    const at = (n: string) => g.cells.find((c) => c.talent.name === n)!;
+    expect([at("C").row, at("C").col]).toEqual([0, 0]);
+    expect([at("B").row, at("B").col]).toEqual([0, 1]);
+    expect([at("A").row, at("A").col]).toEqual([1, 0]);
+  });
+
+  it("sammelt Talente ohne Position in einer Reihe darunter", () => {
+    const g = talentGrid([
+      { name: "A", rank: 1, max: 1, tier: 1, col: 1 },
+      { name: "alt", rank: 2, max: 2 },
+    ]);
+    expect(g.cells.find((c) => c.talent.name === "alt")!.row).toBe(1);
+    expect(g.rows).toBe(2);
   });
 });

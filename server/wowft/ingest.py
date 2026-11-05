@@ -94,7 +94,7 @@ class TalentIn(_In):
 class TalentTabIn(_In):
     name: str | None = Field(default=None, max_length=100)
     points: int = Field(default=0, ge=0)
-    talents: LuaList(TalentIn, 100) = Field(default_factory=list)
+    talents: LuaList(TalentIn, 250) = Field(default_factory=list)
 
 
 class MaterialIn(_In):
