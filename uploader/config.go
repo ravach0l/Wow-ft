@@ -55,11 +55,11 @@ func (c *Config) normalize() {
 }
 
 func (c *Config) Validate() error {
-	if !strings.HasPrefix(c.Token, "wft_") {
-		return errors.New("Upload-Token fehlt oder hat das falsche Format (beginnt mit wft_)")
+	// Der Token darf fehlen: Dann muss er im Spiel unter „Einstellungen“ eingetragen sein.
+	if c.Token != "" && !strings.HasPrefix(c.Token, "wft_") {
+		return errors.New("Upload-Token hat das falsche Format (beginnt mit wft_)")
 	}
-	if !strings.HasPrefix(c.Server, "https://") && !strings.HasPrefix(c.Server, "http://localhost") &&
-		!strings.HasPrefix(c.Server, "http://127.0.0.1") {
+	if !validServer(c.Server) {
 		return errors.New("Server-Adresse muss mit https:// beginnen")
 	}
 	if c.WowDir == "" && len(c.Files) == 0 {

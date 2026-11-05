@@ -65,7 +65,9 @@ Ein Git-Tag `v0.1.0` startet `.github/workflows/release.yml` und hängt an das R
 Für Freunde:
 1. `WowFT-addon.zip` nach `World of Warcraft/_<version>_/Interface/AddOns/` entpacken.
 2. Auf der Webseite anmelden, Einladungslink öffnen, unter „Profil“ Token erzeugen.
-3. `wowft-uploader.exe` starten, Token einfügen, Ordner bestätigen, Autostart mit „J“.
+3. `wowft-uploader.exe` starten, Ordner bestätigen, Autostart mit „J“. Den Token entweder hier
+   einfügen oder im Spiel eintragen (Minimap-Button → Einstellungen, danach `/reload`); der
+   Uploader liest ihn dann aus der Datei.
 
 ### Linux (Lutris, Bottles, Steam/Proton, Heroic, Wine)
 

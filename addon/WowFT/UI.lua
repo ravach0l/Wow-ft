@@ -1,5 +1,5 @@
 -- Minimap-Button statt eigener XP-Leiste: Tooltip mit Level, XP und Sync-Stand.
--- Linksklick: Status im Chat · Rechtsklick: Foto · Ziehen: um die Minimap schieben.
+-- Linksklick: Einstellungen · Rechtsklick: Foto · Ziehen: um die Minimap schieben.
 -- Läuft ohne Fremdbibliotheken (kein LibDBIcon).
 local _, ns = ...
 local Util = ns.Util
@@ -61,7 +61,7 @@ local function ShowTooltip(self)
   end
 
   GameTooltip:AddLine(" ")
-  GameTooltip:AddLine("Linksklick: Status im Chat", 0.5, 0.8, 1)
+  GameTooltip:AddLine("Linksklick: Einstellungen", 0.5, 0.8, 1)
   GameTooltip:AddLine("Rechtsklick: Foto aufnehmen", 0.5, 0.8, 1)
   GameTooltip:AddLine("Ziehen: Button verschieben", 0.5, 0.8, 1)
   GameTooltip:Show()
@@ -92,7 +92,7 @@ local function Build()
     if mouseButton == "RightButton" then
       ns.Photo.Open()
     else
-      SlashCmdList.WOWFT("status")
+      ns.Settings.Toggle()
     end
   end)
   button:SetScript("OnDragStart", function(self)

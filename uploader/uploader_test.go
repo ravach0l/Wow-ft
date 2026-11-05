@@ -63,6 +63,13 @@ func TestConfigRoundtripAndValidation(t *testing.T) {
 		{Server: "https://x", Token: "falsch", WowDir: "/w"},
 		{Server: "http://x", Token: "wft_a", WowDir: "/w"},
 		{Server: "https://x", Token: "wft_a"},
+		{Server: "https://x", WowDir: ""},
+	}
+	// Ohne Token ist gültig: Er kommt dann aus den Einstellungen im Spiel.
+	noToken := &Config{Server: "https://x", WowDir: "/w"}
+	noToken.normalize()
+	if err := noToken.Validate(); err != nil {
+		t.Errorf("Konfiguration ohne Token sollte gültig sein: %v", err)
 	}
 	for _, b := range bad {
 		b.normalize()

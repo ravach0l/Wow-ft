@@ -9,4 +9,5 @@ Util.lua
 Collect.lua
 Core.lua
 UI.lua
+Settings.lua
 Photo.lua

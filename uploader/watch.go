@@ -127,7 +127,17 @@ func (w *Watcher) pollFile(path string, now time.Time) bool {
 		return false
 	}
 
-	res, err := w.up.Upload(content)
+	server, token := EffectiveCredentials(w.cfg, content)
+	if token == "" {
+		w.log.Printf("Kein Upload-Token: im Spiel unter Einstellungen (Minimap-Button) eintragen und /reload, oder den Uploader mit -setup einrichten.")
+		fs.failedHash = hash
+		return false
+	}
+	if c, ok := w.up.(Credentialed); ok {
+		c.SetCredentials(server, token)
+	}
+	// Der Token wird nur im Header gesendet, nie als Teil der Daten.
+	res, err := w.up.Upload(StripAddonSettings(content))
 	if err != nil {
 		var ue *UploadError
 		if errors.As(err, &ue) && ue.Permanent {

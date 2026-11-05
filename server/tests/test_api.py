@@ -45,6 +45,24 @@ def test_ingest_lua_is_idempotent(make_client, sv_text):
     assert {c["name"] for c in chars} == {"Testa", "Twinka"}
 
 
+def test_ingest_ignores_upload_block(make_client, sv_text):
+    """Das Addon legt Server und Token im Block WowFTDB.upload ab (für den Uploader).
+    Der Server muss ihn ignorieren und darf ihn nirgends speichern."""
+    secret = "wft_darf_nirgends_landen"
+    block = f'["upload"] = {{\n["server"] = "https://wow.example.org",\n["token"] = "{secret}",\n}},\n'
+    assert '["characters"] = {' in sv_text
+    with_upload = sv_text.replace('["characters"] = {', block + '["characters"] = {', 1)
+    alice = make_client("alice")
+    token = upload_token(alice)
+    plain = ingest(alice, token, sv_text)
+    r = ingest(alice, token, with_upload)
+    assert r.status_code == 200, r.text
+    # Gleiche Daten, gleiches Ergebnis: Der Block ändert nichts an der Auswertung.
+    assert r.json()["characters"] == plain.json()["characters"]
+    assert secret not in r.text
+    assert secret not in alice.get("/api/me/characters").text
+
+
 def test_ingest_gzip_and_json(make_client, sv_text):
     alice = make_client("alice")
     tok = upload_token(alice)

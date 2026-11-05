@@ -34,6 +34,8 @@ func RunSetup(in io.Reader, out io.Writer, old *Config) (*Config, error) {
 	}
 	fmt.Fprintln(out, "WowFT-Uploader einrichten")
 	fmt.Fprintln(out, "Den Upload-Token erzeugst du auf der Webseite unter „Profil“.")
+	fmt.Fprintln(out, "Du kannst ihn auch im Spiel unter Einstellungen (Minimap-Button) eintragen;")
+	fmt.Fprintln(out, "dann hier einfach Enter drücken.")
 	fmt.Fprintln(out)
 
 	var err error

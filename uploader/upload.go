@@ -52,6 +52,11 @@ func NewClient(server, token string) *Client {
 	return &Client{Server: server, Token: token, HTTP: &http.Client{Timeout: 60 * time.Second}}
 }
 
+// SetCredentials ersetzt Server und Token (z. B. mit den im Spiel eingetragenen Werten).
+func (c *Client) SetCredentials(server, token string) {
+	c.Server, c.Token = server, token
+}
+
 func (c *Client) post(path, contentType string, body io.Reader, gzipped bool) ([]byte, error) {
 	req, err := http.NewRequest(http.MethodPost, c.Server+path, body)
 	if err != nil {

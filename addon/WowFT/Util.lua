@@ -37,7 +37,28 @@ function Util.InitDB(db)
   db.addonVersion = ns.VERSION
   db.characters = db.characters or {}
   db.ui = db.ui or { shown = true }
+  -- Zugangsdaten für den Uploader (Server, Token). Wird vom Uploader gelesen und
+  -- vor dem Hochladen geleert; der Server ignoriert den Block.
+  db.upload = db.upload or {}
   return db
+end
+
+-- Prüft Eingaben aus dem Einstellungsfenster. Leer ist erlaubt (= nicht gesetzt).
+-- Regeln wie im Uploader (config.go): Token beginnt mit wft_, Server mit https://
+-- (oder http://localhost / http://127.0.0.1 zum Entwickeln).
+-- Gibt server, token zurück, bei ungültiger Eingabe nil, nil, Fehlertext.
+function Util.NormalizeUpload(server, token)
+  server = (server or ""):match("^%s*(.-)%s*$"):gsub("/+$", "")
+  token = (token or ""):match("^%s*(.-)%s*$")
+  if token ~= "" and not token:match("^wft_[%w_%-]+$") then
+    return nil, nil, "Der Token beginnt mit wft_ und enthält keine Leerzeichen."
+  end
+  local secure = server:match("^https://%S+$")
+  local local_dev = server:match("^http://localhost") or server:match("^http://127%.0%.0%.1")
+  if server ~= "" and not (secure or local_dev) then
+    return nil, nil, "Die Server-Adresse muss mit https:// beginnen."
+  end
+  return server, token, nil
 end
 
 function Util.InitCharacter(db, guid)

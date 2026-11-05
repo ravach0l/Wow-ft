@@ -125,7 +125,14 @@ func run() int {
 				failed = true
 				continue
 			}
-			res, err := client.Upload(content)
+			server, token := EffectiveCredentials(cfg, content)
+			if token == "" {
+				logger.Printf("%s: kein Upload-Token (im Spiel unter Einstellungen eintragen oder -setup)", f)
+				failed = true
+				continue
+			}
+			client.SetCredentials(server, token)
+			res, err := client.Upload(StripAddonSettings(content))
 			if err != nil {
 				logger.Printf("%s: %v", f, err)
 				failed = true
@@ -142,6 +149,9 @@ func run() int {
 	}
 
 	logger.Printf("WowFT-Uploader %s läuft. Server: %s. Beenden mit Strg+C.", Version, cfg.Server)
+	if cfg.Token == "" {
+		logger.Printf("Kein Token in der Konfiguration: Er wird aus den Einstellungen im Spiel gelesen.")
+	}
 	w := NewWatcher(cfg, client, statePath, logger)
 	stop := make(chan struct{})
 	sig := make(chan os.Signal, 1)

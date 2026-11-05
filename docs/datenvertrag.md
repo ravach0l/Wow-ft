@@ -14,6 +14,20 @@ dieselben Daten als JSON: [`fixtures/ingest.json`](../fixtures/ingest.json).
 Es gibt damit nur einen Parser (auf dem Server). Der manuelle Upload auf der Webseite
 nutzt denselben Weg.
 
+## Zugangsdaten im Spiel (`WowFTDB.upload`)
+
+Im Einstellungsfenster (Minimap-Button) trägt man Server und Upload-Token ein. Das Addon hat
+kein Netzwerk; die Werte stehen deshalb in der Datei, und der **Uploader liest sie dort**.
+
+- Werte aus dem Spiel haben Vorrang vor `config.json` (sie sind das Neuere). Ungültige Werte
+  (Token ohne `wft_`, Server ohne `https://`) ignoriert der Uploader.
+- Der Uploader **leert den Token im Block, bevor er die Datei sendet**. Er geht nur im
+  `Authorization`-Header mit. Der Server ignoriert den Block zusätzlich (`extra="ignore"`) und
+  speichert ihn nicht (Test `test_ingest_ignores_upload_block`).
+- Beim manuellen Upload auf der Webseite wird nichts entfernt: Dort sendet man die Datei selbst,
+  und der Block wird vom Server verworfen.
+- Der Token liegt im Klartext in `WowFT.lua`, wie bisher in `config.json` (dort mit Rechten 600).
+
 ## Struktur
 
 ```lua
@@ -21,6 +35,10 @@ WowFTDB = {
   schema = 1,                -- bei inkompatiblen Änderungen hochzählen
   addonVersion = "0.1.0",
   ui = { ... },              -- nur fürs Addon, wird vom Server ignoriert
+  upload = {                 -- Zugangsdaten aus dem Einstellungsfenster, nur für den Uploader
+    server = "https://…",    -- optional; fehlt er, gilt die Adresse aus der Uploader-Konfiguration
+    token = "wft_…",         -- optional; fehlt er, gilt der Token aus der Uploader-Konfiguration
+  },
   characters = {
     ["<GUID>"] = { ... },     -- Schlüssel ist UnitGUID("player")
   },

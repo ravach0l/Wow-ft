@@ -340,21 +340,32 @@ def test_all_collectors_report_no_errors_with_forever_api(lua):
 
 
 UI_STUBS = r"""
-local function stub()
-  local o = { scripts = {}, shown = true, points = {} }
+FRAMES = {}
+local function stub(kind)
+  local o = { kind = kind, scripts = {}, shown = true, points = {}, text = "", checked = false }
   setmetatable(o, { __index = function(t) return function() return t end end })
   function o:SetScript(name, fn) self.scripts[name] = fn end
   function o:SetShown(s) self.shown = s end
   function o:IsShown() return self.shown end
-  function o:CreateTexture() return stub() end
+  function o:Show() self.shown = true; if self.scripts.OnShow then self.scripts.OnShow(self) end end
+  function o:Hide() self.shown = false end
+  function o:SetText(t) self.text = t end
+  function o:GetText() return self.text end
+  function o:SetChecked(c) self.checked = c end
+  function o:GetChecked() return self.checked end
+  function o:CreateTexture() return stub("texture") end
+  function o:CreateFontString() return stub("fontstring") end
   function o:GetWidth() return 140 end
   function o:GetCenter() return 0, 0 end
   function o:GetEffectiveScale() return 1 end
+  FRAMES[#FRAMES + 1] = o
   return o
 end
-Minimap = stub()
+Minimap = stub("minimap")
 BUTTON = nil
-function CreateFrame(_, name) local f = stub(); if name == "WowFTMinimapButton" then BUTTON = f end return f end
+UISpecialFrames = {}
+tinsert = table.insert
+function CreateFrame(kind, name) local f = stub(kind); f.name = name; if name == "WowFTMinimapButton" then BUTTON = f end return f end
 function GetCursorPosition() return CURSOR[1], CURSOR[2] end
 CURSOR = { 0, 200 }
 TIP = {}
@@ -364,14 +375,29 @@ GameTooltip = {
   Show = function() end, Hide = function() TIP.owner = nil end,
   GetOwner = function() return TIP.owner end,
 }
+function FIND(kind, text)
+  for _, f in ipairs(FRAMES) do
+    if f.kind == kind and (text == nil or f.text == text) then return f end
+  end
+end
+function FIND_ALL(kind)
+  local out = {}
+  for _, f in ipairs(FRAMES) do if f.kind == kind then out[#out + 1] = f end end
+  return out
+end
 """
 
 
-def test_minimap_button(lua):
+def load_ui(lua):
     lua.execute(UI_STUBS)
     loader = lua.eval("function(src, name) return load(src, '@' .. name) end")
-    loader((ADDON / "UI.lua").read_text(), "UI.lua")("WowFT", lua.globals().NS)
+    for name in ("UI.lua", "Settings.lua"):
+        loader((ADDON / name).read_text(), name)("WowFT", lua.globals().NS)
     lua.execute("FIRE('PLAYER_LOGIN')")
+
+
+def test_minimap_button(lua):
+    load_ui(lua)
 
     assert lua.eval("BUTTON ~= nil")
     # Tooltip: Level, XP-Anteil (500 von 8800) und Snapshot-Stand.
@@ -379,9 +405,12 @@ def test_minimap_button(lua):
     tip = " | ".join(lua.eval("TIP.lines").values())
     assert "WowFT" in tip and "Level 12 · 5% XP" in tip and "Snapshot" in tip
 
-    # Linksklick = Status im Chat.
+    # Linksklick öffnet die Einstellungen, ein zweiter schließt sie wieder.
     lua.execute("BUTTON.scripts.OnClick(BUTTON, 'LeftButton')")
-    assert "Snapshots" in lua.eval("WOWSTATE.lastMessage")
+    assert lua.eval("FIND('Frame', nil) ~= nil and FRAMES[#FRAMES] ~= nil")
+    assert lua.eval("(function() for _, f in ipairs(FIND_ALL('Frame')) do if f.name == 'WowFTSettingsFrame' then return f.shown end end end)()")
+    lua.execute("BUTTON.scripts.OnClick(BUTTON, 'LeftButton')")
+    assert not lua.eval("(function() for _, f in ipairs(FIND_ALL('Frame')) do if f.name == 'WowFTSettingsFrame' then return f.shown end end end)()")
 
     # Ziehen: Cursor direkt über der Minimap-Mitte -> 90 Grad, wird gemerkt.
     lua.execute("BUTTON.scripts.OnDragStart(BUTTON); BUTTON.scripts.OnUpdate(BUTTON)")
@@ -392,3 +421,68 @@ def test_minimap_button(lua):
     assert lua.eval("BUTTON.shown") is False and lua.eval("WowFTDB.ui.shown") is False
     lua.execute("SlashCmdList.WOWFT('show')")
     assert lua.eval("BUTTON.shown") is True
+
+
+def test_normalize_upload(lua):
+    n = lambda server, token: tuple(lua.eval("function(a, b) return NS.Util.NormalizeUpload(a, b) end")(server, token))
+    assert n("https://wow.example.org/", " wft_Ab-1_x ") == ("https://wow.example.org", "wft_Ab-1_x", None)
+    assert n("", "") == ("", "", None)  # leer = nicht gesetzt
+    assert n("http://localhost:8000", "wft_a")[0] == "http://localhost:8000"
+    assert n("", "geheim")[2] and n("", "wft_ mit leerzeichen")[2]
+    assert n("http://wow.example.org", "")[2]  # nur https
+    assert n("ftp://x", "")[2]
+
+
+def settings_frame(lua):
+    return lua.eval("(function() for _, f in ipairs(FIND_ALL('Frame')) do if f.name == 'WowFTSettingsFrame' then return f end end end)()")
+
+
+def test_settings_window_saves_values(lua):
+    load_ui(lua)
+    lua.execute("SlashCmdList.WOWFT('config')")
+    assert settings_frame(lua).shown is True
+    assert lua.eval("WowFTDB.upload ~= nil")
+
+    boxes = lua.eval("FIND_ALL('EditBox')")
+    server_box, token_box = boxes[1], boxes[2]
+    checks = lua.eval("FIND_ALL('CheckButton')")
+    gold, material, minimap = checks[1], checks[2], checks[3]
+    save = lua.eval("FIND('Button', 'Speichern')")
+
+    # Gültige Eingabe wird übernommen; Gold an, Material aus, Button weg.
+    server_box.text, token_box.text = "https://wow.example.org/", "wft_abc123"
+    gold.checked, material.checked, minimap.checked = True, False, False
+    save.scripts.OnClick(save)
+    db = lua.eval("WowFTDB")
+    assert (db.upload.server, db.upload.token) == ("https://wow.example.org", "wft_abc123")
+    c = char(lua)
+    assert c.settings.trackGold is True and c.settings.trackMaterials is False and c.materials is None
+    assert lua.eval("BUTTON.shown") is False and db.ui.shown is False
+    assert "Einstellungen gespeichert" in lua.eval("WOWSTATE.lastMessage")
+
+    # Ungültiger Token: nichts wird überschrieben, Fehler steht im Fenster.
+    token_box.text = "falsch"
+    save.scripts.OnClick(save)
+    assert lua.eval("WowFTDB.upload.token") == "wft_abc123"
+    status = lua.eval("FIND_ALL('fontstring')")
+    assert any("wft_" in (f.text or "") and "ff6666" in (f.text or "") for f in status.values())
+
+    # Leere Felder löschen die Werte (Schlüssel fehlen dann in der Datei).
+    server_box.text, token_box.text = "", ""
+    save.scripts.OnClick(save)
+    assert lua.eval("WowFTDB.upload.server") is None and lua.eval("WowFTDB.upload.token") is None
+
+
+def test_settings_window_loads_current_values(lua):
+    load_ui(lua)
+    lua.execute("WowFTDB.upload.server = 'https://a.example.org'; WowFTDB.upload.token = 'wft_vorhanden99'")
+    lua.execute("SlashCmdList.WOWFT('einstellungen')")
+    boxes = lua.eval("FIND_ALL('EditBox')")
+    assert (boxes[1].text, boxes[2].text) == ("https://a.example.org", "wft_vorhanden99")
+    # Material ist standardmäßig an, Gold aus.
+    checks = lua.eval("FIND_ALL('CheckButton')")
+    assert (checks[1].checked, checks[2].checked, checks[3].checked) == (False, True, True)
+    # Der Token erscheint im Status nur gekürzt.
+    texts = [f.text for f in lua.eval("FIND_ALL('fontstring')").values()]
+    assert any("wft_…den99"[:4] in t and "…" in t and "wft_vorhanden99" not in t for t in texts)
+

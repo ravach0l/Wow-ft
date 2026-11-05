@@ -11,4 +11,9 @@ read_globals = {
   "GetInstanceInfo", "GetInventoryItemLink", "GetInventoryItemQuality", "GetItemInfo", "GetItemInfoInstant",
   "GetMoney", "GetNumFactions", "GetNumSkillLines", "GetNumTalentTabs", "GetNumTalents", "GetSkillLineInfo",
   "GetTalentInfo", "GetTalentTabInfo", "InCombatLockdown", "NUM_BAG_SLOTS", "NUM_BANKBAGSLOTS", "Screenshot",
+  -- Forever (Client 1.60.1): moderne Namensräume statt der alten Classic-Funktionen
+  "C_ClassTalents", "C_Item", "C_Reputation", "C_SpecializationInfo", "C_Spell", "C_Traits",
+  "GetProfessionInfo", "GetProfessions", "GetSpellInfo",
+  -- Minimap-Button und Einstellungsfenster
+  "GetCursorPosition", "Minimap", "UISpecialFrames", "tinsert",
 }

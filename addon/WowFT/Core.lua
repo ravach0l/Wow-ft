@@ -275,6 +275,8 @@ SlashCmdList.WOWFT = function(input)
     ns.UI.SetShown(false)
   elseif cmd == "foto" then
     ns.Photo.Open()
+  elseif cmd == "config" or cmd == "einstellungen" or cmd == "settings" then
+    ns.Settings.Toggle()
   elseif cmd == "gold an" or cmd == "gold aus" then
     char.settings.trackGold = cmd == "gold an"
     Print("Gold wird " .. (char.settings.trackGold and "erfasst." or "nicht mehr erfasst."))
@@ -308,6 +310,6 @@ SlashCmdList.WOWFT = function(input)
       Print(("API-Problem bei %s: %s"):format(key, err))
     end
   else
-    Print("Befehle: /ft show | hide | status | snap | foto | gold an|aus | material an|aus")
+    Print("Befehle: /ft config | show | hide | status | snap | foto | gold an|aus | material an|aus")
   end
 end

@@ -52,10 +52,11 @@ zeigt oben, wann der jüngste Upload kam.
 | `Util.lua` | Reine Hilfsfunktionen ohne WoW-API (Ringpuffer, DB-Initialisierung, Spielzeit-Hochrechnung) |
 | `Core.lua` | Events, Snapshots, Level-Ups, Tode, Bosse, Slash-Befehle `/ft …` |
 | `Collect.lua` | Phase-4-Sammler: Berufe, Ausrüstung, Ruf, Talente, Material. Jeder läuft in `pcall`; Fehler landen in `apiErrors` und `/ft status` zeigt sie. |
-| `UI.lua` | Minimap-Button (Tooltip mit Level, XP, Snapshot-Stand; Linksklick Status, Rechtsklick Foto, verschiebbar). Keine eigene XP-Leiste. |
+| `UI.lua` | Minimap-Button (Tooltip mit Level, XP, Snapshot-Stand; Linksklick Einstellungen, Rechtsklick Foto, verschiebbar). Keine eigene XP-Leiste. |
+| `Settings.lua` | Einstellungsfenster (`/ft config`): Server und Upload-Token (landen in `WowFTDB.upload`), Schalter für Gold, Material und Minimap-Button |
 | `Photo.lua` | `/ft foto`: Vollbild mit 3D-Modell, löst Screenshot aus, merkt sich den Zeitpunkt |
 
-Befehle: `/ft show|hide|status|snap|foto`, `/ft gold an|aus`, `/ft material an|aus`.
+Befehle: `/ft config|show|hide|status|snap|foto|api`, `/ft gold an|aus`, `/ft material an|aus`.
 
 Charaktere werden über die **GUID** identifiziert, weil Forever keine Realms hat
 (ein Mega-Server pro Region).
@@ -65,6 +66,7 @@ Charaktere werden über die **GUID** identifiziert, weil Forever keine Realms ha
 | Datei | Aufgabe |
 |---|---|
 | `main.go` | Flags: `-setup`, `-once`, `-find`, `-autostart on\|off`, `-background`, `-config` |
+| `addonsettings.go` | Liest Server und Token aus `WowFTDB.upload` (Vorrang vor `config.json`) und leert den Token vor dem Upload |
 | `setup.go` | Einrichtungsdialog (Server, Token, WoW-Ordner) |
 | `discover.go` | Findet `WowFT.lua` unter dem WoW-Ordner (Groß-/Kleinschreibung egal); bekannte Installationsorte inkl. Lutris, Bottles, Steam/Proton, Heroic |
 | `search.go` | Fallback: durchsucht Laufwerke bzw. Home nach `Wow*.exe` oder `WTF`+`Interface` (Exe-Name von Forever ist unbekannt) |
@@ -181,12 +183,6 @@ Anleitung: [`deployment.md`](deployment.md).
 
 ### D. Danach (offen, nach Bedarf)
 
-- **Einstellungsmenü im Spiel** (Linksklick auf den Minimap-Button, statt wie jetzt den Status auszugeben):
-  Upload-Token und Server-Adresse eintragen, Schalter für Gold, Material, Foto und Button.
-  Offene Punkte: Das Addon hat kein Netzwerk, der Uploader müsste Token und Adresse deshalb
-  aus `WowFT.lua` lesen (dann entfällt `-setup`). Der Token stünde im Klartext in der Datei, die
-  der Uploader hochlädt: Uploader muss ihn vor dem Upload entfernen oder der Server ihn ignorieren
-  (heute liegt er ebenso im Klartext in `config.json`). Vorher in `docs/datenvertrag.md` festhalten.
 - Tray-Symbol für den Windows-Uploader (zeigt „zuletzt hochgeladen“)
 - Forever-Sammelziele, sobald klar ist, wie die API sie liefert
 - Phase 5: Live-Abgleich im Spiel per `BNSendGameData` (vorher prüfen, ob vorhanden)
