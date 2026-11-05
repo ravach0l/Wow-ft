@@ -1,3 +1,4 @@
+import { hiddenLabels, SHARE_CATEGORIES } from "./privacy";
 import { describe, expect, it } from "vitest";
 import { ago, duration, gold } from "./format";
 import { mergeMaterials } from "./pages/CharacterPage";
@@ -10,7 +11,7 @@ function char(p: Partial<CharacterState>): CharacterState {
     id: 1, name: "A", class: "MAGE", race: "Human", faction: "Alliance", region: "EU",
     ownerId: 1, ownerName: "x", ts: 0, lastUpload: 0, level: 1, xp: 0, xpMax: 400, rested: 0,
     zone: null, playedTotal: null, playedLevel: null, gold: null, totalXp: 0, xpPerHour: null,
-    etaSeconds: null, behindLeader: 0, deaths: null, photoUrl: null, ...p,
+    etaSeconds: null, behindLeader: 0, deaths: null, photoUrl: null, hidden: [], ...p,
   };
 }
 
@@ -61,5 +62,20 @@ describe("phase 4 helpers", () => {
       { id: 1, name: "Erz", bags: 3, bank: 4 },
       { id: 2, name: "Stoff", bags: 0, bank: 1 },
     ]);
+  });
+});
+
+
+describe("Freigaben", () => {
+  it("nennt ausgeblendete Kategorien; Spielzeit nur bei eingeschaltetem Rennen-Modus", () => {
+    expect(hiddenLabels(["gold", "gear"], false)).toEqual(["Gold", "Ausrüstung"]);
+    expect(hiddenLabels(["pace", "gold"], false)).toEqual(["Gold"]);
+    expect(hiddenLabels(["pace"], true)).toEqual(["Spielzeit und Tempo"]);
+    expect(hiddenLabels(undefined, true)).toEqual([]);
+  });
+
+  it("deckt alle Server-Kategorien ab (server/wowft/privacy.py)", () => {
+    const server = ["pace", "gold", "zone", "gear", "skills", "reputation", "talents", "materials", "deaths", "bosses", "photo"];
+    expect(SHARE_CATEGORIES.map((c) => c.key).sort()).toEqual([...server].sort());
   });
 });

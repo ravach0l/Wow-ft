@@ -47,7 +47,7 @@ export default function CharacterCard({ c, compact = false }: { c: CharacterStat
       </div>
       {!compact && (
         <div className="row" style={{ marginTop: 4 }}>
-          <span>{c.xpPerHour ? `${number(c.xpPerHour)} XP/Std.` : "XP/Std. –"}</span>
+          {!c.hidden.includes("pace") && <span>{c.xpPerHour ? `${number(c.xpPerHour)} XP/Std.` : "XP/Std. –"}</span>}
           <span>{c.behindLeader > 0 ? `${number(c.behindLeader)} XP zurück` : "vorn"}</span>
         </div>
       )}

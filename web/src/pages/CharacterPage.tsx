@@ -3,15 +3,18 @@ import { useParams } from "react-router-dom";
 import { XpBar } from "../components/CharacterCard";
 import Chart, { AxisToggle, type Axis } from "../components/Chart";
 import EventLine from "../components/EventLine";
+import { useMe } from "../App";
 import { ago, dateTime, duration, gold, number } from "../format";
 import { useApi } from "../hooks";
+import { hiddenLabels } from "../privacy";
 import type { CharacterDetailState, History, Skill } from "../types";
 import { classColor, className, qualityColor, raceName } from "../wow";
 
 export default function CharacterPage() {
   const { charId } = useParams();
+  const { me } = useMe();
   const { data, error } = useApi<History>(`/api/characters/${charId}/history`);
-  const [axis, setAxis] = useState<Axis>("played");
+  const [axisChoice, setAxis] = useState<Axis>("played");
   const [photoIdx, setPhotoIdx] = useState(0);
 
   if (error) return <p className="error">{error.message}</p>;
@@ -19,6 +22,10 @@ export default function CharacterPage() {
   const c = data.character;
   if (!c) return <p className="muted">Für diesen Charakter gibt es noch keine Daten.</p>;
   const color = classColor(c.class);
+  // Ohne freigegebene Spielzeit gibt es nur die Kalenderachse.
+  const paceHidden = data.hidden.includes("pace");
+  const axis: Axis = paceHidden ? "calendar" : axisChoice;
+  const hiddenNames = hiddenLabels(data.hidden, me.features.race);
   const photo = data.photos[photoIdx] ?? data.photos[0];
   const points = data.snapshots
     .map((s) => ({ x: axis === "calendar" ? s.ts : s.playedTotal, y: s.level + (s.xpMax > 0 ? s.xp / s.xpMax : 0) }))
@@ -47,15 +54,23 @@ export default function CharacterPage() {
           </div>
           <XpBar c={c} />
           <div className="stats">
-            <Stat k="XP pro Stunde" v={number(c.xpPerHour)} />
-            <Stat k="bis Level 60 (Spielzeit)" v={duration(c.etaSeconds)} />
-            <Stat k="Spielzeit gesamt" v={duration(c.playedTotal)} />
-            <Stat k="Spielzeit im Level" v={duration(c.playedLevel)} />
+            {!paceHidden && (
+              <>
+                <Stat k="XP pro Stunde" v={number(c.xpPerHour)} />
+                <Stat k="bis Level 60 (Spielzeit)" v={duration(c.etaSeconds)} />
+                <Stat k="Spielzeit gesamt" v={duration(c.playedTotal)} />
+                <Stat k="Spielzeit im Level" v={duration(c.playedLevel)} />
+              </>
+            )}
             {c.deaths != null && <Stat k="Tode" v={number(c.deaths)} />}
             {c.gold != null && <Stat k="Gold" v={gold(c.gold)} />}
           </div>
         </div>
       </div>
+
+      {hiddenNames.length > 0 && (
+        <p className="muted" role="note">Nicht freigegeben: {hiddenNames.join(", ")}.</p>
+      )}
 
       {data.photos.length > 1 && (
         <div className="gallery" aria-label="Ältere Bilder">
@@ -71,7 +86,7 @@ export default function CharacterPage() {
       <div className="section">
         <div className="toolbar" style={{ justifyContent: "space-between" }}>
           <h2 style={{ margin: 0 }}>Level-Verlauf</h2>
-          <AxisToggle axis={axis} onChange={setAxis} />
+          {!paceHidden && <AxisToggle axis={axis} onChange={setAxis} />}
         </div>
         <Chart series={[{ name: c.name, color: "var(--accent)", points }]} axis={axis} />
       </div>

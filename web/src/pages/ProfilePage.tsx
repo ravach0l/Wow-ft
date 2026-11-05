@@ -3,6 +3,7 @@ import { useMe } from "../App";
 import { api } from "../api";
 import { ago } from "../format";
 import { useApi } from "../hooks";
+import { SHARE_CATEGORIES } from "../privacy";
 import type { GroupDetail, OwnCharacter, UploadToken } from "../types";
 import { classColor, className } from "../wow";
 
@@ -94,8 +95,9 @@ function Tokens() {
 }
 
 function Characters() {
+  const { me } = useMe();
   const { data, reload } = useApi<OwnCharacter[]>("/api/me/characters");
-  async function patch(id: number, body: Partial<Pick<OwnCharacter, "visible" | "goldVisible">>) {
+  async function patch(id: number, body: { visible?: boolean; share?: Record<string, boolean> }) {
     await api.patch(`/api/characters/${id}`, body);
     reload();
   }
@@ -109,16 +111,38 @@ function Characters() {
             <span style={{ color: classColor(c.class), fontWeight: 600 }}>{c.name}</span>
             <span className="muted">{className(c.class)}</span>
             <span className="when">Upload {ago(c.lastUpload)}</span>
-            <div style={{ display: "flex", gap: 16, width: "100%" }}>
+            <div style={{ width: "100%" }}>
               <label className="toggle">
                 <input type="checkbox" checked={c.visible} onChange={(e) => patch(c.id, { visible: e.target.checked })} />
                 in Gruppen zeigen
               </label>
-              <label className="toggle">
-                <input type="checkbox" checked={c.goldVisible} onChange={(e) => patch(c.id, { goldVisible: e.target.checked })} />
-                Gold zeigen
-              </label>
             </div>
+            {c.visible && (
+              <details className="shares">
+                <summary>Was sehen die anderen?</summary>
+                <p className="muted" style={{ margin: "8px 0" }}>
+                  Level und XP sind immer sichtbar. Du selbst siehst von deinen Charakteren immer alles.
+                </p>
+                <div className="share-grid">
+                  {SHARE_CATEGORIES.map((cat) => (
+                    <label className="toggle" key={cat.key} title={cat.hint}>
+                      <input
+                        type="checkbox"
+                        checked={c.share[cat.key] ?? false}
+                        onChange={(e) => patch(c.id, { share: { [cat.key]: e.target.checked } })}
+                      />
+                      {cat.label}
+                    </label>
+                  ))}
+                </div>
+                {!me.features.race && (
+                  <p className="muted" style={{ margin: "8px 0 0" }}>
+                    Spielzeit und Tempo sehen andere erst, wenn ein Admin den Rennen-Modus einschaltet. Bis dahin
+                    bleiben sie verborgen, egal wie du hier einstellst.
+                  </p>
+                )}
+              </details>
+            )}
           </li>
         ))}
       </ul>

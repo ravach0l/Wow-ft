@@ -31,6 +31,8 @@ export interface CharacterState {
   behindLeader: number;
   deaths: number | null;
   photoUrl: string | null;
+  /** Kategorien, die dir der Besitzer nicht zeigt (siehe privacy.ts). */
+  hidden: string[];
 }
 
 export interface Overview {
@@ -56,6 +58,7 @@ export interface History {
   events: FeedEvent[];
   state: CharacterDetailState;
   photos: { id: number; url: string; ts: number; level: number | null }[];
+  hidden: string[];
 }
 
 export interface Skill {
@@ -152,5 +155,7 @@ export interface OwnCharacter {
   class: string | null;
   visible: boolean;
   goldVisible: boolean;
+  /** Freigabe je Kategorie (Schlüssel siehe privacy.ts). */
+  share: Record<string, boolean>;
   lastUpload: number | null;
 }

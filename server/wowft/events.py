@@ -13,6 +13,7 @@ SKILL_CATEGORIES = {
     "berufe": "profession",
     "professions": "profession",
     "sekundäre fertigkeiten": "secondary",
+    "nebenberufe": "secondary",
     "secondary skills": "secondary",
     "waffenfertigkeiten": "weapon",
     "weapon skills": "weapon",

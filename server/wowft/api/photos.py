@@ -4,6 +4,7 @@ from fastapi import APIRouter, HTTPException, Request
 from fastapi.responses import FileResponse
 from sqlalchemy import select
 
+from .. import privacy
 from ..auth import CurrentUser, DbSession, TokenUser
 from ..config import get_settings
 from ..models import Character, Photo, Snapshot
@@ -51,6 +52,8 @@ def _visible_photo(photo_id: int, user, session) -> tuple[Photo, Character]:
     photo = session.get(Photo, photo_id)
     char = photo and session.get(Character, photo.character_id)
     if photo is None or char is None or not user_can_see(session, user, char):
+        raise HTTPException(404, "Foto nicht gefunden")
+    if not privacy.is_shared(char, "photo", user.id):
         raise HTTPException(404, "Foto nicht gefunden")
     return photo, char
 

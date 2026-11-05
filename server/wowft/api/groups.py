@@ -2,10 +2,10 @@ import secrets
 
 from fastapi import APIRouter, HTTPException
 from pydantic import BaseModel, Field
-from sqlalchemy import func, select
+from sqlalchemy import and_, func, not_, or_, select
 from sqlalchemy.orm import Session
 
-from .. import discord, metrics
+from .. import discord, metrics, privacy
 from ..auth import CurrentUser, DbSession
 from ..config import get_settings
 from ..events import describe
@@ -165,7 +165,11 @@ def join(code: str, user: CurrentUser, session: DbSession):
 # --- Übersicht und Feed ---------------------------------------------------------
 
 
-def character_state(session: Session, c: Character, max_level: int) -> dict | None:
+def character_state(
+    session: Session, c: Character, max_level: int, viewer_id: int | None = None
+) -> dict | None:
+    """Stand eines Charakters, so wie ihn `viewer_id` sehen darf (ohne Angabe: wie ein Fremder)."""
+    hidden = privacy.hidden_for(c, viewer_id)
     snaps = list(
         session.scalars(
             select(Snapshot)
@@ -178,9 +182,14 @@ def character_state(session: Session, c: Character, max_level: int) -> dict | No
         return None
     snaps.reverse()
     s = snaps[-1]
-    rate = metrics.xp_per_hour(snaps)
-    photo_id = session.scalar(
-        select(Photo.id).where(Photo.character_id == c.id).order_by(Photo.ts.desc()).limit(1)
+    # Das Tempo ergibt sich aus der Spielzeit: beides gehört zu einer Freigabe.
+    rate = None if "pace" in hidden else metrics.xp_per_hour(snaps)
+    photo_id = (
+        None
+        if "photo" in hidden
+        else session.scalar(
+            select(Photo.id).where(Photo.character_id == c.id).order_by(Photo.ts.desc()).limit(1)
+        )
     )
     return {
         "id": c.id,
@@ -197,15 +206,16 @@ def character_state(session: Session, c: Character, max_level: int) -> dict | No
         "xp": s.xp,
         "xpMax": s.xp_max,
         "rested": s.rested,
-        "zone": s.zone,
-        "playedTotal": s.played_total,
-        "playedLevel": s.played_level,
-        "gold": s.gold if c.gold_visible else None,
+        "zone": None if "zone" in hidden else s.zone,
+        "playedTotal": None if "pace" in hidden else s.played_total,
+        "playedLevel": None if "pace" in hidden else s.played_level,
+        "gold": None if "gold" in hidden else s.gold,
         "totalXp": metrics.total_xp(s.level, s.xp),
         "xpPerHour": round(rate) if rate else None,
         "etaSeconds": metrics.eta_seconds(s.level, s.xp, rate, max_level),
-        "deaths": (c.state or {}).get("deaths"),
+        "deaths": None if "deaths" in hidden else (c.state or {}).get("deaths"),
         "photoUrl": f"/api/photos/{photo_id}" if photo_id else None,
+        "hidden": sorted(hidden),  # Kategorien, die dieser Betrachter nicht sehen darf (für die Anzeige)
     }
 
 
@@ -215,7 +225,7 @@ def overview(group_id: int, user: CurrentUser, session: DbSession):
     max_level = get_settings().max_level
     chars = []
     for c in _visible_characters(session, group_id):
-        state = character_state(session, c, max_level)
+        state = character_state(session, c, max_level, user.id)
         if state:
             chars.append(state)
     leader = max((c["totalXp"] for c in chars), default=0)
@@ -247,12 +257,15 @@ def feed(group_id: int, user: CurrentUser, session: DbSession, limit: int = 50):
     chars = {c.id: c for c in _visible_characters(session, group_id)}
     if not chars:
         return []
-    events = session.scalars(
-        select(Event)
-        .where(Event.character_id.in_(chars.keys()))
-        .order_by(Event.ts.desc())
-        .limit(max(1, min(limit, 200)))
-    )
+    query = select(Event).where(Event.character_id.in_(chars.keys()))
+    blocked = [
+        and_(Event.character_id == c.id, Event.type.in_(types))
+        for c in chars.values()
+        if (types := privacy.hidden_event_types(c, user.id))
+    ]
+    if blocked:
+        query = query.where(not_(or_(*blocked)))
+    events = session.scalars(query.order_by(Event.ts.desc()).limit(max(1, min(limit, 200))))
     return [event_out(e, chars[e.character_id]) for e in events]
 
 
@@ -277,9 +290,15 @@ def race(group_id: int, user: CurrentUser, session: DbSession):
         raise HTTPException(404, "Das Rennen-Modul ist ausgeschaltet")
     series = []
     for c in _visible_characters(session, group_id):
+        hide_played = "pace" in privacy.hidden_for(c, user.id)
         snaps = session.scalars(select(Snapshot).where(Snapshot.character_id == c.id).order_by(Snapshot.ts))
         points = [
-            [s.ts, s.played_total, round(s.level + (s.xp / s.xp_max if s.xp_max else 0), 3)] for s in snaps
+            [
+                s.ts,
+                None if hide_played else s.played_total,
+                round(s.level + (s.xp / s.xp_max if s.xp_max else 0), 3),
+            ]
+            for s in snaps
         ]
         if points:
             series.append(
@@ -300,6 +319,8 @@ def materials(group_id: int, user: CurrentUser, session: DbSession):
     _membership(session, group_id, user)
     items: dict[int, dict] = {}
     for c in _visible_characters(session, group_id):
+        if "materials" in privacy.hidden_for(c, user.id):
+            continue
         mats = (c.state or {}).get("materials") or {}
         per_item: dict[int, dict] = {}
         for where in ("bags", "bank"):

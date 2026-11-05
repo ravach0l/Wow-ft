@@ -87,10 +87,11 @@ Konfiguration und Log liegen in `~/.config/wowft/` bzw. `%APPDATA%\wowft\`.
 | `metrics.py` | XP-Tabelle (Classic-Werte), XP/Stunde, Zeit bis Level 60 |
 | `auth.py` | Authentik-Login (OIDC), Session-Cookie, Upload-Tokens (SHA-256), Admin-Prüfung, Rate-Limit |
 | `features.py` | Module, die Admins seitenweit schalten (bisher: Rennen) |
+| `privacy.py` | Freigaben je Charakter und Kategorie; zentrale Stelle für „wer sieht was“ |
 | `discord.py` | Posts an Gruppen-Webhooks (nur Ereignisse der letzten 12 h) |
 | `api/*.py` | Endpunkte: `ingest`, `me` (Profil, Tokens, eigene Charaktere), `groups` (Gruppen, Einladungen, Übersicht, Feed, Rennen, Material), `characters` (Verlauf/Detail), `photos`, `admin` |
 | `models.py` | Tabellen: users, groups, group_members, tokens, characters (mit `state`-JSON), snapshots, events, photos, app_settings |
-| `alembic/versions/` | Migrationen `0001` (Grundschema), `0002` (Seiteneinstellungen). **Ab jetzt nur neue Migrationen anlegen, alte nicht mehr ändern.** |
+| `alembic/versions/` | Migrationen `0001` (Grundschema), `0002` (Seiteneinstellungen), `0003` (Freigaben). **Ab jetzt nur neue Migrationen anlegen, alte nicht mehr ändern.** |
 
 Die API-Doku gibt es im laufenden Server unter `/api/docs`.
 
@@ -119,8 +120,17 @@ Ansicht: [`docs/ui-mockup.png`](ui-mockup.png).
 5. Antwort enthält `photoRequests` → Uploader sucht den passenden Screenshot und lädt ihn hoch.
 6. Webseite liest über die Session des eingeloggten Nutzers nur Gruppen, in denen er Mitglied ist.
 
-**Sichtbarkeit:** Alle Mitglieder einer Gruppe sehen alle sichtbaren Charaktere der anderen
-Mitglieder. Pro Charakter abschaltbar („in Gruppen zeigen“), Gold standardmäßig verborgen.
+**Sichtbarkeit (Freigaben):** Alle Mitglieder einer Gruppe sehen die sichtbaren Charaktere der
+anderen („in Gruppen zeigen“ pro Charakter). Darüber hinaus kann der Besitzer je Charakter einzelne
+Kategorien ausblenden (Profil → „Was sehen die anderen?“): Spielzeit und Tempo, Gold, Aufenthaltsort,
+Ausrüstung, Berufe, Ruf, Talente, Materialien, Tode, Boss-Kills, Foto. Level und XP sind immer sichtbar;
+der Besitzer sieht seine Charaktere selbst immer vollständig. Entscheidend ist `server/wowft/privacy.py`:
+Die Prüfung läuft auf dem Server und gilt für Übersicht, Detailseite, Feed, Material, Rennen, Foto-Abruf
+und Discord. Ausgeblendetes verlässt den Server nicht. Standard: alles sichtbar außer Gold.
+
+**Spielzeit und Tempo** (XP/Std., Zeit bis Maximallevel) sind für andere **nur sichtbar, wenn der
+Rennen-Modus an ist**, selbst wenn der Besitzer sie freigegeben hat (Tempo ergibt sich aus der Spielzeit).
+Der Modus ist standardmäßig aus; die Sortierung nach Tempo/Spielzeit gibt es dann nicht.
 
 **Zwei getrennte Schlüssel:** Login (Authentik) für die Webseite, Upload-Token für den Uploader.
 Auf dem Spielrechner steht nie ein Passwort.

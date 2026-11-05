@@ -31,7 +31,10 @@ export default function OverviewPage() {
   if (error) return <p className="error">{error.message}</p>;
   if (!data) return <p className="muted">Lädt …</p>;
 
-  const people = groupByOwner(data.characters, mode);
+  // Tempo und Spielzeit sind für andere nur im Rennen-Modus sichtbar; ohne ihn gibt es nur „Level“.
+  const available = (Object.keys(SORT_LABELS) as SortMode[]).filter((m) => m === "level" || me.features.race);
+  const active: SortMode = available.includes(mode) ? mode : "level";
+  const people = groupByOwner(data.characters, active);
 
   return (
     <>
@@ -46,13 +49,15 @@ export default function OverviewPage() {
         ) : (
           <h1>{data.group.name}</h1>
         )}
-        <div className="seg" role="group" aria-label="Sortierung">
-          {(Object.keys(SORT_LABELS) as SortMode[]).map((m) => (
-            <button key={m} aria-pressed={mode === m} onClick={() => choose(m)}>
-              {SORT_LABELS[m]}
-            </button>
-          ))}
-        </div>
+        {available.length > 1 && (
+          <div className="seg" role="group" aria-label="Sortierung">
+            {available.map((m) => (
+              <button key={m} aria-pressed={active === m} onClick={() => choose(m)}>
+                {SORT_LABELS[m]}
+              </button>
+            ))}
+          </div>
+        )}
       </div>
 
       {people.length === 0 ? (

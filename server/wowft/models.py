@@ -77,6 +77,8 @@ class Character(Base):
     faction: Mapped[str | None] = mapped_column(String(16))
     visible: Mapped[bool] = mapped_column(Boolean, default=True)
     gold_visible: Mapped[bool] = mapped_column(Boolean, default=False)
+    # Freigaben je Kategorie (siehe privacy.py); fehlende Schlüssel gelten als Standardwert.
+    share: Mapped[dict[str, bool] | None] = mapped_column(JSON)
     created: Mapped[int] = mapped_column(Integer, default=now)
     last_upload: Mapped[int | None] = mapped_column(Integer)
     # Jüngster Stand aus dem Addon: Berufe, Ausrüstung, Ruf, Talente, Material, Tode.

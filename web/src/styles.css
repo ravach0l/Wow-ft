@@ -126,6 +126,9 @@ a.card:hover { text-decoration: none; border-color: var(--text-3); }
 .error { color: var(--danger); }
 .center { min-height: 60vh; display: grid; place-items: center; text-align: center; }
 .center .section { max-width: 420px; }
+.shares { width: 100%; margin-top: 6px; }
+.shares summary { cursor: pointer; font-size: .9rem; color: var(--text-2); }
+.share-grid { display: grid; grid-template-columns: repeat(auto-fill, minmax(170px, 1fr)); gap: 8px 16px; }
 .toggle { display: flex; align-items: center; gap: 8px; font-size: .9rem; color: var(--text-2); }
 .chart { width: 100%; height: auto; display: block; }
 .chart text { fill: var(--text-3); font-size: 11px; }

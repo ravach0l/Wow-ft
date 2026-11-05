@@ -57,7 +57,13 @@ nach wenigen Sekunden auf der Webseite.
 - **Nichts geht live:** WoW speichert die Daten nur bei Logout oder `/reload`. Die Webseite
   zeigt oben, wann der letzte Upload kam.
 - **Foto:** `/ft foto` öffnet eine Fotoansicht deines Charakters. Das Bild landet auf der Seite.
-- **Gold** wird nicht gemeldet, solange du es nicht einschaltest (Button → Einstellungen).
+- **Was andere sehen:** Auf der Webseite unter **Profil → „Was sehen die anderen?“** kannst du je
+  Charakter ausblenden, was du nicht zeigen willst (Gold, Ausrüstung, Ruf, Aufenthaltsort, Tode,
+  Foto und mehr). Level und XP sehen immer alle. **Gold ist standardmäßig verborgen.** Deine
+  **Spielzeit** sehen andere nur, wenn Dominic den Rennen-Modus einschaltet.
+- **Gar nicht erst aufnehmen:** Wer Gold oder Material nicht einmal hochladen will, schaltet es im
+  Spiel unter Einstellungen ab. Das Addon nimmt dann nichts Neues dazu. (Was schon früher
+  aufgenommen und hochgeladen wurde, bleibt auf dem Server und lässt sich dort ausblenden.)
 - **Button weg?** `/ft show`. Alle Befehle: `/ft`.
 
 ## Wenn etwas nicht klappt

@@ -2,6 +2,7 @@ from fastapi import APIRouter, HTTPException
 from pydantic import BaseModel, Field
 from sqlalchemy import select
 
+from .. import privacy
 from ..auth import CurrentUser, DbSession, is_admin, new_token
 from ..features import get_features
 from ..models import Character, GroupMember, Token, now
@@ -78,6 +79,7 @@ def character_out(c: Character) -> dict:
         "region": c.region,
         "visible": c.visible,
         "goldVisible": c.gold_visible,
+        "share": privacy.shares(c),
         "lastUpload": c.last_upload,
     }
 
@@ -91,6 +93,8 @@ def my_characters(user: CurrentUser, session: DbSession):
 class CharacterPatch(BaseModel):
     visible: bool | None = None
     goldVisible: bool | None = None
+    # Freigaben je Kategorie, z. B. {"pace": false, "zone": false} (Schlüssel: privacy.CATEGORIES)
+    share: dict[str, bool] | None = None
 
 
 @router.patch("/characters/{char_id}")
@@ -102,5 +106,10 @@ def patch_character(char_id: int, body: CharacterPatch, user: CurrentUser, sessi
         c.visible = body.visible
     if body.goldVisible is not None:
         c.gold_visible = body.goldVisible
+    if body.share:
+        try:
+            privacy.update(c, body.share)
+        except ValueError as e:
+            raise HTTPException(422, str(e)) from e
     session.commit()
     return character_out(c)

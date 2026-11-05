@@ -120,9 +120,9 @@ def test_overview_and_visibility(make_client, sv_text):
     assert testa["zone"] == 'Dämmerwald "Duskwood"'
     assert testa["behindLeader"] == 0
     assert by_name["Twinka"]["behindLeader"] > 0
-    # 13 -> 13: 3060 XP in 1600 s Spielzeit, zwischen 12 und 13: über Levelgrenze
-    assert testa["xpPerHour"] > 0
-    assert testa["etaSeconds"] > 0
+    # Spielzeit und das daraus berechnete Tempo sind für andere verborgen, solange der
+    # Rennen-Modus aus ist (Standard). Mit Modus an: tests/test_privacy.py.
+    assert testa["playedTotal"] is None and testa["xpPerHour"] is None and testa["etaSeconds"] is None
     assert testa["gold"] is None
 
     twinka_id = by_name["Twinka"]["id"]

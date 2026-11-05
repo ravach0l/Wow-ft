@@ -9,6 +9,7 @@ import httpx
 from sqlalchemy import select
 from sqlalchemy.orm import Session
 
+from . import privacy
 from .events import describe
 from .models import Character, Event, Group, GroupMember, now
 
@@ -37,6 +38,9 @@ def build_posts(session: Session, event_ids: list[int]) -> list[tuple[str, str]]
     for e in evs:
         char = session.get(Character, e.character_id)
         if char is None or not char.visible:
+            continue
+        # Die Gruppe ist ein Publikum aus Fremden: Ausgeblendetes gehört nicht nach Discord.
+        if not privacy.event_visible(char, None, e.type):
             continue
         line = f"**{char.name}** ({char.user.name}) {describe(e.type, e.data)}"
         member_groups = session.scalars(
