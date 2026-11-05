@@ -24,6 +24,7 @@ jobs:
           LDFLAGS="-s -w -X main.Version=$V"
           GOOS=windows GOARCH=amd64 go build -ldflags "$LDFLAGS" -o dist/wowft-uploader.exe .
           GOOS=linux GOARCH=amd64 go build -ldflags "$LDFLAGS" -o dist/wowft-uploader-linux-amd64 .
+          GOOS=linux GOARCH=arm64 go build -ldflags "$LDFLAGS" -o dist/wowft-uploader-linux-arm64 .
           GOOS=darwin GOARCH=arm64 go build -ldflags "$LDFLAGS" -o dist/wowft-uploader-macos-arm64 .
       - name: Addon packen
         run: cd addon && zip -r ../uploader/dist/WowFT-addon.zip WowFT

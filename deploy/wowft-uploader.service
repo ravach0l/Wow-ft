@@ -1,4 +1,6 @@
-# Linux: Uploader als Benutzerdienst.
+# Linux: Uploader als Benutzerdienst. Normalerweise nicht nötig:
+# "wowft-uploader -setup" bzw. "wowft-uploader -autostart on" legt diese Unit
+# selbst an. Nur für Handarbeit:
 #   cp wowft-uploader ~/.local/bin/ && wowft-uploader -setup
 #   cp wowft-uploader.service ~/.config/systemd/user/
 #   systemctl --user enable --now wowft-uploader

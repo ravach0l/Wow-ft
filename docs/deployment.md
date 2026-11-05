@@ -46,12 +46,34 @@ git pull && cd deploy && docker compose up -d --build
 ## 6. Uploader und Addon verteilen
 
 Ein Git-Tag `v0.1.0` startet `.github/workflows/release.yml` und hängt an das Release:
-`wowft-uploader.exe` (Windows), Linux- und macOS-Binary sowie `WowFT-addon.zip`.
+`wowft-uploader.exe` (Windows), Linux (amd64, arm64), macOS sowie `WowFT-addon.zip`.
 
 Für Freunde:
 1. `WowFT-addon.zip` nach `World of Warcraft/_<version>_/Interface/AddOns/` entpacken.
 2. Auf der Webseite anmelden, Einladungslink öffnen, unter „Profil“ Token erzeugen.
 3. `wowft-uploader.exe` starten, Token einfügen, Ordner bestätigen, Autostart mit „J“.
+
+### Linux (Lutris, Bottles, Steam/Proton, Heroic, Wine)
+
+Das Addon läuft unter Wine/Proton wie unter Windows. Der Uploader ist ein natives Linux-Programm:
+
+```sh
+install -m 755 wowft-uploader-linux-amd64 ~/.local/bin/wowft-uploader
+wowft-uploader -setup
+```
+
+- Der WoW-Ordner wird in den üblichen Prefixen gesucht: `~/Games/*` (Lutris),
+  Bottles (auch Flatpak), Steam-`compatdata` (auch Flatpak), Heroic, `~/.wine`,
+  `~/.local/share/wineprefixes`. Sonst den Pfad zu `…/drive_c/Program Files (x86)/World of Warcraft`
+  von Hand eingeben.
+- Groß-/Kleinschreibung von `WTF/Account/…/SavedVariables` ist egal.
+- Autostart: Mit systemd wird ein Benutzerdienst angelegt und sofort gestartet
+  (`systemctl --user status wowft-uploader`, Log: `journalctl --user -u wowft-uploader -f`).
+  Ohne systemd entsteht ein XDG-Autostart-Eintrag für die Desktop-Anmeldung.
+  Ein- und ausschalten: `wowft-uploader -autostart on|off`.
+- Konfiguration und Log liegen in `~/.config/wowft/`.
+
+### Windows
 
 Hinweis: Die .exe ist nicht signiert. Windows SmartScreen fragt beim ersten Start
 nach („Weitere Informationen → Trotzdem ausführen“).

@@ -47,7 +47,7 @@ Legende: **Größe** S ≈ 1–2 h, M ≈ halber Tag, L ≈ ganzer Tag.
 | 1.1–1.5 Addon-MVP | erledigt, im Spiel noch ungetestet |
 | 2.1–2.9 Server, Uploader, Übersicht, Deployment | erledigt (Uploader in Go statt Python) |
 | 3.1 Authentik-Login, 3.2 Gruppen/Einladungen, 3.3 Tokens, 3.4 Sichtbarkeit, 3.6 manueller Upload, 3.7 Härtung | erledigt |
-| 3.5 Uploader für Freunde | Einrichtungsdialog, Autostart, Release-Build erledigt; Tray-Symbol offen |
+| 3.5 Uploader für Freunde | Einrichtungsdialog, Autostart (Windows: Registry, Linux: systemd/XDG), Release-Builds für Windows, Linux, macOS erledigt; Tray-Symbol offen |
 | 4.1–4.3 Verlauf, Detail, Feed | Grundversion erledigt (Level-Verlauf, Level-Up-Feed) |
 | 4.4–4.6, Phase 5 | offen |
 

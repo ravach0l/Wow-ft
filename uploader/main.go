@@ -50,21 +50,31 @@ func run() int {
 	logger := newLogger(filepath.Join(baseDir, "uploader.log"), !*background)
 
 	if *autostart != "" {
-		if err := SetAutostart(*autostart == "on"); err != nil {
+		on := *autostart == "on"
+		started, err := SetAutostart(on, *configPath)
+		if err != nil {
 			logger.Printf("Autostart: %v", err)
 			return 1
 		}
-		logger.Printf("Autostart %s.", map[bool]string{true: "eingeschaltet", false: "ausgeschaltet"}[*autostart == "on"])
+		logger.Printf("Autostart %s.", map[bool]string{true: "eingeschaltet", false: "ausgeschaltet"}[on])
+		if started {
+			logger.Printf("Der Uploader läuft jetzt im Hintergrund (systemctl --user status %s).", "wowft-uploader")
+		}
 		return 0
 	}
 
 	cfg, err := LoadConfig(*configPath)
 	if *setup || errors.Is(err, fs.ErrNotExist) {
-		cfg, err = interactiveSetup(*configPath, cfg)
+		var started bool
+		cfg, started, err = interactiveSetup(*configPath, cfg)
 		if err != nil {
 			logger.Printf("Einrichtung abgebrochen: %v", err)
 			pause()
 			return 1
+		}
+		if started {
+			// Der Hintergrunddienst übernimmt; keine zweite Instanz starten.
+			return 0
 		}
 	} else if err != nil {
 		logger.Printf("Konfiguration %s fehlerhaft: %v (mit -setup neu einrichten)", *configPath, err)
@@ -122,27 +132,34 @@ func run() int {
 	return 0
 }
 
-func interactiveSetup(path string, old *Config) (*Config, error) {
+func interactiveSetup(path string, old *Config) (*Config, bool, error) {
 	cfg, err := RunSetup(os.Stdin, os.Stdout, old)
 	if err != nil {
-		return nil, err
+		return nil, false, err
 	}
 	if err := SaveConfig(path, cfg); err != nil {
-		return nil, err
+		return nil, false, err
 	}
 	fmt.Printf("Gespeichert in %s\n", path)
-	if runtime.GOOS == "windows" {
-		fmt.Print("Beim Windows-Start automatisch im Hintergrund starten? [J/n]: ")
-		line, _ := bufio.NewReader(os.Stdin).ReadString('\n')
-		if a := strings.ToLower(strings.TrimSpace(line)); a == "" || a == "j" || a == "y" {
-			if err := SetAutostart(true); err != nil {
-				fmt.Println("Autostart fehlgeschlagen:", err)
-			} else {
-				fmt.Println("Autostart eingerichtet.")
-			}
-		}
+	if runtime.GOOS != "windows" && runtime.GOOS != "linux" {
+		return cfg, false, nil
 	}
-	return cfg, nil
+	fmt.Print("Beim Anmelden automatisch im Hintergrund starten? [J/n]: ")
+	line, _ := bufio.NewReader(os.Stdin).ReadString('\n')
+	if a := strings.ToLower(strings.TrimSpace(line)); a != "" && a != "j" && a != "y" {
+		return cfg, false, nil
+	}
+	started, err := SetAutostart(true, path)
+	switch {
+	case err != nil:
+		fmt.Println("Autostart fehlgeschlagen:", err)
+	case started:
+		fmt.Println("Autostart eingerichtet. Der Uploader läuft jetzt als Dienst im Hintergrund.")
+		fmt.Println("Status: systemctl --user status wowft-uploader · Log: journalctl --user -u wowft-uploader -f")
+	default:
+		fmt.Println("Autostart eingerichtet (ab der nächsten Anmeldung).")
+	}
+	return cfg, started, nil
 }
 
 func newLogger(path string, console bool) *log.Logger {
