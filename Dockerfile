@@ -11,6 +11,7 @@ ENV PYTHONDONTWRITEBYTECODE=1 \
     PYTHONUNBUFFERED=1 \
     WOWFT_STATIC_DIR=/app/static \
     WOWFT_DATABASE_URL=sqlite:////data/wowft.db \
+    WOWFT_DATA_DIR=/data \
     WOWFT_COOKIE_SECURE=true
 WORKDIR /app
 COPY server/pyproject.toml ./

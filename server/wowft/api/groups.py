@@ -5,10 +5,11 @@ from pydantic import BaseModel, Field
 from sqlalchemy import func, select
 from sqlalchemy.orm import Session
 
-from .. import metrics
+from .. import discord, metrics
 from ..auth import CurrentUser, DbSession
 from ..config import get_settings
-from ..models import Character, Event, Group, GroupMember, Snapshot, User
+from ..events import describe
+from ..models import Character, Event, Group, GroupMember, Photo, Snapshot, User
 
 router = APIRouter(prefix="/api", tags=["groups"])
 
@@ -65,11 +66,32 @@ def _group_out(g: Group, me: GroupMember) -> dict:
     }
     if me.role == "owner":
         out["inviteCode"] = g.invite_code
+        out["discordWebhook"] = g.discord_webhook
     return out
 
 
 class GroupIn(BaseModel):
     name: str = Field(min_length=1, max_length=100)
+
+
+class GroupPatch(BaseModel):
+    name: str | None = Field(default=None, min_length=1, max_length=100)
+    # Leerer String entfernt den Webhook.
+    discordWebhook: str | None = Field(default=None, max_length=300)
+
+
+@router.patch("/groups/{group_id}")
+def patch_group(group_id: int, body: GroupPatch, user: CurrentUser, session: DbSession):
+    m = _require_owner(session, group_id, user)
+    if body.name is not None:
+        m.group.name = body.name
+    if body.discordWebhook is not None:
+        url = body.discordWebhook.strip()
+        if url and not discord.valid_webhook(url):
+            raise HTTPException(422, "Das ist keine Discord-Webhook-Adresse")
+        m.group.discord_webhook = url or None
+    session.commit()
+    return _group_out(m.group, m)
 
 
 @router.post("/groups", status_code=201)
@@ -156,6 +178,9 @@ def character_state(session: Session, c: Character, max_level: int) -> dict | No
     snaps.reverse()
     s = snaps[-1]
     rate = metrics.xp_per_hour(snaps)
+    photo_id = session.scalar(
+        select(Photo.id).where(Photo.character_id == c.id).order_by(Photo.ts.desc()).limit(1)
+    )
     return {
         "id": c.id,
         "name": c.name,
@@ -178,6 +203,8 @@ def character_state(session: Session, c: Character, max_level: int) -> dict | No
         "totalXp": metrics.total_xp(s.level, s.xp),
         "xpPerHour": round(rate) if rate else None,
         "etaSeconds": metrics.eta_seconds(s.level, s.xp, rate, max_level),
+        "deaths": (c.state or {}).get("deaths"),
+        "photoUrl": f"/api/photos/{photo_id}" if photo_id else None,
     }
 
 
@@ -207,6 +234,7 @@ def event_out(e: Event, c: Character) -> dict:
         "ts": e.ts,
         "type": e.type,
         "data": e.data,
+        "text": describe(e.type, e.data),
         "character": {"id": c.id, "name": c.name, "class": c.class_},
         "ownerName": c.user.name,
     }
@@ -225,3 +253,73 @@ def feed(group_id: int, user: CurrentUser, session: DbSession, limit: int = 50):
         .limit(max(1, min(limit, 200)))
     )
     return [event_out(e, chars[e.character_id]) for e in events]
+
+
+# --- Rennen und Material ---------------------------------------------------------
+
+RACE_MAX_POINTS = 200
+
+
+def _thin(points: list, limit: int) -> list:
+    if len(points) <= limit:
+        return points
+    step = len(points) / limit
+    picked = [points[int(i * step)] for i in range(limit - 1)]
+    return [*picked, points[-1]]
+
+
+@router.get("/groups/{group_id}/race")
+def race(group_id: int, user: CurrentUser, session: DbSession):
+    """Level-Verlauf aller sichtbaren Charaktere: [Zeitpunkt, Spielzeit, Level+Anteil]."""
+    _membership(session, group_id, user)
+    series = []
+    for c in _visible_characters(session, group_id):
+        snaps = session.scalars(select(Snapshot).where(Snapshot.character_id == c.id).order_by(Snapshot.ts))
+        points = [
+            [s.ts, s.played_total, round(s.level + (s.xp / s.xp_max if s.xp_max else 0), 3)] for s in snaps
+        ]
+        if points:
+            series.append(
+                {
+                    "id": c.id,
+                    "name": c.name,
+                    "class": c.class_,
+                    "ownerName": c.user.name,
+                    "points": _thin(points, RACE_MAX_POINTS),
+                }
+            )
+    return series
+
+
+@router.get("/groups/{group_id}/materials")
+def materials(group_id: int, user: CurrentUser, session: DbSession):
+    """Handwerksmaterialien der Gruppe: wer hat wie viel (Taschen + letzter Bankstand)."""
+    _membership(session, group_id, user)
+    items: dict[int, dict] = {}
+    for c in _visible_characters(session, group_id):
+        mats = (c.state or {}).get("materials") or {}
+        per_item: dict[int, dict] = {}
+        for where in ("bags", "bank"):
+            for m in mats.get(where) or []:
+                entry = per_item.setdefault(m["id"], {"name": m.get("name"), "bags": 0, "bank": 0})
+                entry[where] += m.get("count") or 0
+                entry["name"] = entry["name"] or m.get("name")
+        for item_id, e in per_item.items():
+            item = items.setdefault(item_id, {"id": item_id, "name": e["name"], "total": 0, "holders": []})
+            item["name"] = item["name"] or e["name"]
+            item["total"] += e["bags"] + e["bank"]
+            item["holders"].append(
+                {
+                    "characterId": c.id,
+                    "name": c.name,
+                    "class": c.class_,
+                    "ownerName": c.user.name,
+                    "bags": e["bags"],
+                    "bank": e["bank"],
+                    "bankScanned": mats.get("bankScanned"),
+                }
+            )
+    out = sorted(items.values(), key=lambda i: (i["name"] or "").lower())
+    for i in out:
+        i["holders"].sort(key=lambda h: -(h["bags"] + h["bank"]))
+    return out

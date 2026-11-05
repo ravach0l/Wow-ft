@@ -31,6 +31,7 @@ class Group(Base):
     id: Mapped[int] = mapped_column(primary_key=True)
     name: Mapped[str] = mapped_column(String(100))
     invite_code: Mapped[str] = mapped_column(String(64), unique=True)
+    discord_webhook: Mapped[str | None] = mapped_column(String(300))
     created: Mapped[int] = mapped_column(Integer, default=now)
 
     members: Mapped[list["GroupMember"]] = relationship(back_populates="group", cascade="all, delete-orphan")
@@ -78,6 +79,8 @@ class Character(Base):
     gold_visible: Mapped[bool] = mapped_column(Boolean, default=False)
     created: Mapped[int] = mapped_column(Integer, default=now)
     last_upload: Mapped[int | None] = mapped_column(Integer)
+    # Jüngster Stand aus dem Addon: Berufe, Ausrüstung, Ruf, Talente, Material, Tode.
+    state: Mapped[dict[str, Any] | None] = mapped_column(JSON)
 
     user: Mapped[User] = relationship()
 
@@ -102,10 +105,24 @@ class Snapshot(Base):
 
 class Event(Base):
     __tablename__ = "events"
-    __table_args__ = (UniqueConstraint("character_id", "ts", "type"),)
+    __table_args__ = (UniqueConstraint("character_id", "ts", "type", "key"),)
 
     id: Mapped[int] = mapped_column(primary_key=True)
     character_id: Mapped[int] = mapped_column(ForeignKey("characters.id", ondelete="CASCADE"))
     ts: Mapped[int] = mapped_column(Integer, index=True)
     type: Mapped[str] = mapped_column(String(32))
+    # Unterscheidet mehrere Ereignisse gleichen Typs zur selben Zeit (z. B. Beruf, Slot).
+    key: Mapped[str] = mapped_column(String(100), default="")
     data: Mapped[dict[str, Any] | None] = mapped_column(JSON)
+
+
+class Photo(Base):
+    __tablename__ = "photos"
+    __table_args__ = (UniqueConstraint("character_id", "ts"),)
+
+    id: Mapped[int] = mapped_column(primary_key=True)
+    character_id: Mapped[int] = mapped_column(ForeignKey("characters.id", ondelete="CASCADE"), index=True)
+    ts: Mapped[int] = mapped_column(Integer)
+    level: Mapped[int | None] = mapped_column(Integer)
+    path: Mapped[str] = mapped_column(String(255))
+    created: Mapped[int] = mapped_column(Integer, default=now)

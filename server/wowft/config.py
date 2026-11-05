@@ -21,6 +21,8 @@ class Settings(BaseSettings):
     dev_login: bool = False
 
     static_dir: str = ""
+    data_dir: str = "./data"  # Fotos liegen in <data_dir>/photos
+    max_photo_bytes: int = 3 * 1024 * 1024
     max_upload_bytes: int = 5 * 1024 * 1024
     max_level: int = 60
 

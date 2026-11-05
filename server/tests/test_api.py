@@ -37,9 +37,10 @@ def test_ingest_lua_is_idempotent(make_client, sv_text):
     tok = upload_token(alice)
     r = ingest(alice, tok, sv_text.encode())
     assert r.status_code == 200, r.text
-    assert r.json() == {"characters": 2, "snapshots": 4, "events": 1, "skipped": []}
+    req = [{"characterId": 1, "name": "Testa", "t": 1793863500}]
+    assert r.json() == {"characters": 2, "snapshots": 4, "events": 4, "skipped": [], "photoRequests": req}
     r = ingest(alice, tok, sv_text.encode())
-    assert r.json() == {"characters": 2, "snapshots": 0, "events": 0, "skipped": []}
+    assert r.json() == {"characters": 2, "snapshots": 0, "events": 0, "skipped": [], "photoRequests": req}
     chars = alice.get("/api/me/characters").json()
     assert {c["name"] for c in chars} == {"Testa", "Twinka"}
 
@@ -120,8 +121,11 @@ def test_feed_and_history(make_client, sv_text):
     alice, bob, g = setup_group(make_client)
     ingest(bob, upload_token(bob), sv_text.encode())
     feed = alice.get(f"/api/groups/{g['id']}/feed").json()
-    assert feed[0]["type"] == "level_up"
-    assert feed[0]["data"]["level"] == 13
+    by_type = {e["type"]: e for e in feed}
+    assert set(by_type) == {"level_up", "death", "boss"}
+    assert by_type["level_up"]["text"] == "hat Level 13 erreicht"
+    assert by_type["boss"]["text"] == "hat Edwin VanCleef besiegt (Die Todesminen)"
+    assert feed[0]["ts"] >= feed[-1]["ts"]
     cid = feed[0]["character"]["id"]
     h = alice.get(f"/api/characters/{cid}/history").json()
     assert len(h["snapshots"]) == 3

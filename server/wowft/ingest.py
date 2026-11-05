@@ -1,21 +1,21 @@
 """Nimmt SavedVariables entgegen und schreibt neue Snapshots/Ereignisse.
 
 Doppelte Uploads sind harmlos: Snapshots sind über (Charakter, Zeitpunkt)
-eindeutig, Ereignisse über (Charakter, Zeitpunkt, Typ).
+eindeutig, Ereignisse über (Charakter, Zeitpunkt, Typ, Schlüssel).
 """
 
 from __future__ import annotations
 
 import json
-from typing import Any
+from typing import Annotated, Any
 
-from pydantic import BaseModel, ConfigDict, Field, ValidationError, field_validator
+from pydantic import BaseModel, BeforeValidator, ConfigDict, Field, ValidationError, field_validator
 from sqlalchemy import select
 from sqlalchemy.dialects.sqlite import insert as sqlite_insert
 from sqlalchemy.orm import Session
 
-from . import svparse
-from .models import Character, Event, Snapshot, User, now
+from . import events, svparse
+from .models import Character, Event, Photo, Snapshot, User, now
 
 SUPPORTED_SCHEMAS = {1}
 
@@ -51,6 +51,78 @@ class LevelUpIn(BaseModel):
     playedTotal: int | None = Field(default=None, ge=0)
 
 
+class _In(BaseModel):
+    model_config = ConfigDict(extra="ignore")
+
+
+def LuaList(item: Any, max_length: int = 500) -> Any:  # noqa: N802
+    """Liste, die aus Lua auch als leere Tabelle {} kommen darf."""
+    return Annotated[list[item], BeforeValidator(_empty_dict_to_list), Field(max_length=max_length)]
+
+
+class SkillIn(_In):
+    name: str = Field(max_length=100)
+    rank: int = Field(default=0, ge=0)
+    max: int | None = Field(default=None, ge=0)
+    header: str | None = Field(default=None, max_length=100)
+
+
+class EquipIn(_In):
+    slot: int = Field(ge=0, le=19)
+    id: int | None = None
+    name: str | None = Field(default=None, max_length=150)
+    quality: int | None = Field(default=None, ge=0, le=8)
+
+
+class RepIn(_In):
+    id: int | None = None
+    name: str = Field(max_length=100)
+    standing: int = Field(default=4, ge=0, le=8)
+    value: int | None = None
+    min: int | None = None
+    max: int | None = None
+
+
+class TalentIn(_In):
+    name: str = Field(max_length=100)
+    rank: int = Field(ge=0)
+    max: int | None = None
+    tier: int | None = None
+    col: int | None = None
+
+
+class TalentTabIn(_In):
+    name: str | None = Field(default=None, max_length=100)
+    points: int = Field(default=0, ge=0)
+    talents: LuaList(TalentIn, 100) = Field(default_factory=list)
+
+
+class MaterialIn(_In):
+    id: int
+    name: str | None = Field(default=None, max_length=150)
+    count: int = Field(ge=0)
+
+
+class MaterialsIn(_In):
+    bags: LuaList(MaterialIn) = Field(default_factory=list)
+    bank: LuaList(MaterialIn) | None = None
+    bankScanned: int | None = None
+
+
+class DeathIn(_In):
+    t: int = Field(gt=1_000_000_000)
+    level: int | None = None
+    zone: str | None = Field(default=None, max_length=100)
+
+
+class BossIn(_In):
+    t: int = Field(gt=1_000_000_000)
+    id: int | None = None
+    name: str = Field(max_length=150)
+    instance: str | None = Field(default=None, max_length=150)
+    level: int | None = None
+
+
 class CharacterIn(BaseModel):
     model_config = ConfigDict(extra="ignore")
 
@@ -63,8 +135,31 @@ class CharacterIn(BaseModel):
     faction: str | None = Field(default=None, max_length=16)
     snapshots: list[SnapshotIn] = Field(default_factory=list, max_length=500)
     levelUps: list[LevelUpIn] = Field(default_factory=list, max_length=500)
+    # Phase 4 – alles optional, ältere Addon-Versionen schicken es nicht.
+    deaths: int | None = Field(default=None, ge=0)
+    deathLog: LuaList(DeathIn) = Field(default_factory=list)
+    bossKills: LuaList(BossIn) = Field(default_factory=list)
+    photoRequests: LuaList(int, 50) = Field(default_factory=list)
+    skills: LuaList(SkillIn, 200) | None = None
+    equipment: LuaList(EquipIn, 20) | None = None
+    reputation: LuaList(RepIn, 200) | None = None
+    talents: LuaList(TalentTabIn, 5) | None = None
+    materials: MaterialsIn | None = None
 
     _lists = field_validator("snapshots", "levelUps", mode="before")(_empty_dict_to_list)
+
+    def state(self) -> dict[str, Any]:
+        """Die Teile, die als jüngster Stand am Charakter gespeichert werden."""
+        out: dict[str, Any] = {}
+        for key in ("skills", "equipment", "reputation", "talents"):
+            value = getattr(self, key)
+            if value is not None:
+                out[key] = [v.model_dump() for v in value]
+        if self.materials is not None:
+            out["materials"] = self.materials.model_dump()
+        if self.deaths is not None:
+            out["deaths"] = self.deaths
+        return out
 
 
 class SavedVariablesIn(BaseModel):
@@ -107,8 +202,25 @@ def decode(body: bytes, content_type: str | None) -> SavedVariablesIn:
     return parsed
 
 
-def store(session: Session, user: User, data: SavedVariablesIn) -> dict[str, Any]:
-    result: dict[str, Any] = {"characters": 0, "snapshots": 0, "events": 0, "skipped": []}
+def _insert_events(session: Session, rows: list[dict[str, Any]]) -> list[int]:
+    if not rows:
+        return []
+    for r in rows:
+        r.setdefault("key", "")
+    stmt = sqlite_insert(Event).values(rows).on_conflict_do_nothing().returning(Event.id)
+    return list(session.scalars(stmt))
+
+
+def store(session: Session, user: User, data: SavedVariablesIn) -> tuple[dict[str, Any], list[int]]:
+    """Speichert den Upload. Gibt die Antwort und die IDs neuer Ereignisse zurück."""
+    result: dict[str, Any] = {
+        "characters": 0,
+        "snapshots": 0,
+        "events": 0,
+        "skipped": [],
+        "photoRequests": [],
+    }
+    new_event_ids: list[int] = []
     ts_now = now()
     for key, c in data.characters.items():
         guid = c.guid or key
@@ -149,18 +261,53 @@ def store(session: Session, user: User, data: SavedVariablesIn) -> dict[str, Any
             stmt = sqlite_insert(Snapshot).values(rows).on_conflict_do_nothing()
             result["snapshots"] += session.execute(stmt).rowcount
 
-        if c.levelUps:
-            rows = [
-                {
-                    "character_id": char.id,
-                    "ts": lu.t,
-                    "type": "level_up",
-                    "data": {"level": lu.level, "playedTotal": lu.playedTotal},
-                }
-                for lu in c.levelUps
+        rows = [
+            {
+                "character_id": char.id,
+                "ts": lu.t,
+                "type": "level_up",
+                "key": str(lu.level),
+                "data": {"level": lu.level, "playedTotal": lu.playedTotal},
+            }
+            for lu in c.levelUps
+        ]
+        rows += [
+            {"character_id": char.id, "ts": d.t, "type": "death", "data": {"level": d.level, "zone": d.zone}}
+            for d in c.deathLog
+        ]
+        rows += [
+            {
+                "character_id": char.id,
+                "ts": b.t,
+                "type": "boss",
+                "key": str(b.id or b.name)[:100],
+                "data": {"name": b.name, "instance": b.instance, "level": b.level},
+            }
+            for b in c.bossKills
+        ]
+
+        # Zustand übernehmen und Änderungen als Ereignisse festhalten.
+        new_state = c.state()
+        prev = dict(char.state or {})
+        ts_state = max((s.t for s in c.snapshots), default=ts_now)
+        for type_, ekey, edata in events.derive(prev, new_state):
+            rows.append(
+                {"character_id": char.id, "ts": ts_state, "type": type_, "key": ekey[:100], "data": edata}
+            )
+        if new_state or c.photoRequests:
+            char.state = {**prev, **new_state, "photoRequests": sorted(set(c.photoRequests))}
+
+        ids = _insert_events(session, rows)
+        new_event_ids += ids
+        result["events"] += len(ids)
+
+        if c.photoRequests:
+            have = set(session.scalars(select(Photo.ts).where(Photo.character_id == char.id)))
+            result["photoRequests"] += [
+                {"characterId": char.id, "name": char.name, "t": t}
+                for t in sorted(set(c.photoRequests))
+                if t not in have
             ]
-            stmt = sqlite_insert(Event).values(rows).on_conflict_do_nothing()
-            result["events"] += session.execute(stmt).rowcount
 
     session.commit()
-    return result
+    return result, new_event_ids

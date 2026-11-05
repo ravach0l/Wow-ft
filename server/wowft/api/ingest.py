@@ -1,8 +1,9 @@
 import zlib
 
-from fastapi import APIRouter, HTTPException, Request, UploadFile
+from fastapi import APIRouter, BackgroundTasks, HTTPException, Request, UploadFile
 from sqlalchemy.orm import Session
 
+from .. import discord
 from ..auth import CurrentUser, DbSession, TokenUser, client_ip, limiter
 from ..config import get_settings
 from ..ingest import IngestError, decode, store
@@ -33,16 +34,22 @@ def _gunzip(body: bytes, limit: int) -> bytes:
     return out
 
 
-def _ingest(session: Session, user: User, body: bytes, content_type: str | None) -> dict:
+def _ingest(
+    session: Session, user: User, body: bytes, content_type: str | None, background: BackgroundTasks
+) -> dict:
     try:
         data = decode(body, content_type)
     except IngestError as e:
         raise HTTPException(422, str(e)) from e
-    return store(session, user, data)
+    result, new_event_ids = store(session, user, data)
+    posts = discord.build_posts(session, new_event_ids)
+    if posts:
+        background.add_task(discord.send, posts)
+    return result
 
 
 @router.post("/ingest")
-async def ingest(request: Request, session: DbSession, user: TokenUser):
+async def ingest(request: Request, session: DbSession, user: TokenUser, background: BackgroundTasks):
     """Vom Uploader: Rohinhalt von WowFT.lua (optional gzip) oder JSON."""
     settings = get_settings()
     limiter.check(f"ingest:{user.id}", settings.ingest_rate_per_minute)
@@ -50,15 +57,15 @@ async def ingest(request: Request, session: DbSession, user: TokenUser):
     body = await _read_limited(request, settings.max_upload_bytes)
     if request.headers.get("content-encoding", "").lower() == "gzip":
         body = _gunzip(body, settings.max_upload_bytes)
-    return _ingest(session, user, body, request.headers.get("content-type"))
+    return _ingest(session, user, body, request.headers.get("content-type"), background)
 
 
 @router.post("/me/upload")
-async def manual_upload(file: UploadFile, session: DbSession, user: CurrentUser):
+async def manual_upload(file: UploadFile, session: DbSession, user: CurrentUser, background: BackgroundTasks):
     """Manueller Upload der WowFT.lua über die Web-Seite."""
     settings = get_settings()
     limiter.check(f"ingest:{user.id}", settings.ingest_rate_per_minute)
     body = await file.read(settings.max_upload_bytes + 1)
     if len(body) > settings.max_upload_bytes:
         raise HTTPException(413, "Datei zu groß")
-    return _ingest(session, user, body, None)
+    return _ingest(session, user, body, None, background)
