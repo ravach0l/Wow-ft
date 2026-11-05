@@ -1,0 +1,8 @@
+# In die bestehende Caddy-Konfiguration auf mediavault übernehmen.
+wow.the-birds.xyz {
+	encode zstd gzip
+	request_body /api/ingest {
+		max_size 6MB
+	}
+	reverse_proxy 127.0.0.1:8085
+}

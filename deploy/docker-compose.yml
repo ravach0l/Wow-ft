@@ -1,0 +1,17 @@
+# Auf mediavault: cp .env.example .env, Werte eintragen, dann
+#   docker compose up -d --build
+services:
+  wowft:
+    build:
+      context: ..
+    image: wowft:latest
+    container_name: wowft
+    restart: unless-stopped
+    env_file: .env
+    volumes:
+      - ./data:/data
+    # Nur lokal erreichbar; Caddy leitet weiter (siehe Caddyfile).
+    # Läuft Caddy selbst in Docker, stattdessen dasselbe Netzwerk verwenden
+    # und im Caddyfile "reverse_proxy wowft:8000" eintragen.
+    ports:
+      - "127.0.0.1:8085:8000"

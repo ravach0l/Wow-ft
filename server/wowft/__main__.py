@@ -4,6 +4,7 @@ python -m wowft            # Server auf 0.0.0.0:8000
 python -m wowft migrate    # nur Migrationen
 """
 
+import os
 import sys
 from pathlib import Path
 
@@ -31,7 +32,8 @@ def main() -> None:
         host="0.0.0.0",
         port=8000,
         proxy_headers=True,
-        forwarded_allow_ips="*",
+        # Der Container ist nur über Caddy erreichbar (Port an 127.0.0.1 gebunden).
+        forwarded_allow_ips=os.environ.get("FORWARDED_ALLOW_IPS", "*"),
     )
 
 

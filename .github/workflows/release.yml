@@ -1,0 +1,32 @@
+name: Release
+
+# Ein Tag wie v0.1.0 baut Uploader-Binaries und das Addon-Zip.
+on:
+  push:
+    tags: ["v*"]
+
+permissions:
+  contents: write
+
+jobs:
+  release:
+    runs-on: ubuntu-latest
+    steps:
+      - uses: actions/checkout@v4
+      - uses: actions/setup-go@v5
+        with:
+          go-version: "1.24"
+      - name: Uploader bauen
+        working-directory: uploader
+        run: |
+          mkdir -p dist
+          V=${GITHUB_REF_NAME#v}
+          LDFLAGS="-s -w -X main.Version=$V"
+          GOOS=windows GOARCH=amd64 go build -ldflags "$LDFLAGS" -o dist/wowft-uploader.exe .
+          GOOS=linux GOARCH=amd64 go build -ldflags "$LDFLAGS" -o dist/wowft-uploader-linux-amd64 .
+          GOOS=darwin GOARCH=arm64 go build -ldflags "$LDFLAGS" -o dist/wowft-uploader-macos-arm64 .
+      - name: Addon packen
+        run: cd addon && zip -r ../uploader/dist/WowFT-addon.zip WowFT
+      - uses: softprops/action-gh-release@v2
+        with:
+          files: uploader/dist/*

@@ -1,0 +1,14 @@
+# Linux: Uploader als Benutzerdienst.
+#   cp wowft-uploader ~/.local/bin/ && wowft-uploader -setup
+#   cp wowft-uploader.service ~/.config/systemd/user/
+#   systemctl --user enable --now wowft-uploader
+[Unit]
+Description=WowFT-Uploader
+
+[Service]
+ExecStart=%h/.local/bin/wowft-uploader
+Restart=on-failure
+RestartSec=30
+
+[Install]
+WantedBy=default.target

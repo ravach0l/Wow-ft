@@ -13,23 +13,43 @@ Legende: **Größe** S ≈ 1–2 h, M ≈ halber Tag, L ≈ ganzer Tag.
 
 | Thema | Entscheidung | Begründung |
 |---|---|---|
-| Repo-Struktur | Monorepo: `addon/`, `sv-parse/`, `uploader/`, `server/`, `web/`, `deploy/`, `docs/` | Datenvertrag, Fixtures und CI an einer Stelle |
+| Repo-Struktur | Monorepo: `addon/`, `uploader/`, `server/`, `web/`, `deploy/`, `fixtures/`, `docs/` | Datenvertrag, Fixtures und CI an einer Stelle |
 | Namen | Addon-Ordner `WowFT`, SavedVariable `WowFTDB`, Slash-Befehl `/ft` | kurz, kollisionsarm |
 | Server | Python 3.12, FastAPI, SQLAlchemy 2 + Alembic, SQLite | wie im Konzept; Alembic, damit Phase 3/4 ohne Umbau migrieren |
-| Uploader | Python, `watchdog`, `httpx`, PyInstaller | wie im Konzept; teilt den Parser mit dem Server |
-| Lua-Parser | eigenes kleines Paket `sv-parse` (reiner Parser, **führt nie Lua aus**) | wird von Uploader *und* Server (manueller Upload) genutzt |
-| Web | Vite + React + TypeScript, Diagramme mit Recharts | leichtgewichtig, mobil zuerst |
+| Uploader | **Go**, ohne Fremdabhängigkeiten, eine kleine .exe | schickt die Datei roh (gzip); kein Parser im Uploader |
+| Lua-Parser | nur auf dem Server (`server/wowft/svparse.py`, **führt nie Lua aus**) | ein Parser für Uploader-Upload und manuellen Upload |
+| Web | Vite + React + TypeScript, Diagramm als eigenes SVG | leichtgewichtig, mobil zuerst |
 | Auslieferung | ein Docker-Image: FastAPI liefert API und gebautes Frontend aus, Caddy davor | ein Container, keine CORS-Fragen |
-| Login | Authentik per OIDC (Magic-Link nur als spätere Option) | Authentik läuft bereits für die D&D-Accounts |
+| Login | Authentik per OIDC, kein Magic-Link | Authentik läuft bereits für die D&D-Accounts |
+| Charakter-Schlüssel | `UnitGUID("player")` | Forever hat keine Realms (Mega-Server pro Region) |
+| Rate-Limit | im Server, nicht in Caddy | Standard-Caddy hat kein Rate-Limit-Modul |
+| Domain | `wow.the-birds.xyz` | |
 
 ### Abweichungen/Ergänzungen zum Konzept
 
-- `characters` braucht zusätzlich **`realm`**; eindeutig ist `(user_id, realm, name)`.
+- Forever hat **keine Realms**. `characters` ist über die **`guid`** eindeutig; `realm` und
+  `region` werden nur zur Info gespeichert.
 - Für das Charakterbild kommt eine achte Tabelle **`photos`** dazu (Phase 4).
 - XP-pro-Level-Tabelle (1–60) als Konstante auf dem Server, für „Zeit bis 60“.
   Classic-Werte als Startpunkt, für Forever prüfen.
 - Statusfenster im Spiel kann nur „zuletzt gespeichert“ zeigen, nicht „zuletzt hochgeladen“
   (das Addon erfährt nichts vom Uploader). Die Upload-Bestätigung zeigt der Uploader.
+
+---
+
+## Stand
+
+| Schritt | Stand |
+|---|---|
+| 0.1 Client-Prüfung | Realms geklärt (keine); Rest offen, Checkliste in `docs/client-check.md` |
+| 0.2 Repo-Gerüst, CI | erledigt |
+| 0.3 Datenvertrag | erledigt (`docs/datenvertrag.md`, `fixtures/`) |
+| 1.1–1.5 Addon-MVP | erledigt, im Spiel noch ungetestet |
+| 2.1–2.9 Server, Uploader, Übersicht, Deployment | erledigt (Uploader in Go statt Python) |
+| 3.1 Authentik-Login, 3.2 Gruppen/Einladungen, 3.3 Tokens, 3.4 Sichtbarkeit, 3.6 manueller Upload, 3.7 Härtung | erledigt |
+| 3.5 Uploader für Freunde | Einrichtungsdialog, Autostart, Release-Build erledigt; Tray-Symbol offen |
+| 4.1–4.3 Verlauf, Detail, Feed | Grundversion erledigt (Level-Verlauf, Level-Up-Feed) |
+| 4.4–4.6, Phase 5 | offen |
 
 ---
 
@@ -294,9 +314,8 @@ Jede Erweiterung: Addon-Erfassung → Datenvertrag ergänzen (`extras`) → Inge
 
 Danach ist Phase 1+2 durch und das Ding schon im Alltag nützlich.
 
-## Offene Entscheidungen
+## Entschieden
 
-- Login nur Authentik, oder zusätzlich Magic-Link für Freunde ohne Authentik-Konto?
-- Bleibt der Uploader bei Python/PyInstaller (größere .exe, ggf. Virenscanner-Fehlalarme)
-  oder später ein Go-Rewrite als einzelne kleine Datei?
-- Domain `wow.the-birds.xyz` final?
+- Login nur über Authentik.
+- Uploader in Go (eine kleine Datei, keine Laufzeit nötig).
+- Domain bleibt `wow.the-birds.xyz`.
