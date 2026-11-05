@@ -18,6 +18,7 @@ Spiel ──► addon/ (WowFT.lua) ──► uploader/ (Go) ──► server/ (F
 | `fixtures` | Beispiel-SavedVariables für Tests |
 | `docs` | Plan, Datenvertrag, Deployment, Client-Prüfung |
 
+- **Einstieg und Übergabe: [`docs/UEBERGABE.md`](docs/UEBERGABE.md)**
 - Plan und Stand: [`docs/umsetzungsplan.md`](docs/umsetzungsplan.md)
 - Datenformat: [`docs/datenvertrag.md`](docs/datenvertrag.md)
 - Installation: [`docs/deployment.md`](docs/deployment.md)

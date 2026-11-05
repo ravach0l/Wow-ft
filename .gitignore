@@ -10,3 +10,4 @@ web/dist/
 uploader/dist/
 uploader/wowft-uploader
 uploader/wowft-uploader.exe
+web/tsconfig.tsbuildinfo
