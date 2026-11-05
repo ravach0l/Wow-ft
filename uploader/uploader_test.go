@@ -209,6 +209,8 @@ func TestWatcherBackoffAndPermanentErrors(t *testing.T) {
 }
 
 func TestRunSetup(t *testing.T) {
+	searchWowDirs = func() []string { return nil }
+	t.Cleanup(func() { searchWowDirs = SearchWowDirsDefault })
 	wow := t.TempDir()
 	in := strings.NewReader("\nwft_neu\n" + wow + "\n")
 	var out bytes.Buffer

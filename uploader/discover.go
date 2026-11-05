@@ -99,8 +99,16 @@ func linuxWowPatterns(home string) []string {
 	return out
 }
 
-// GuessWowDirs liefert existierende Standard-Installationsorte.
+// GuessWowDirs liefert bekannte Installationsorte und sucht, falls dort
+// nichts liegt, auf den Laufwerken nach der WoW-Programmdatei.
 func GuessWowDirs() []string {
+	if dirs := knownWowDirs(); len(dirs) > 0 {
+		return dirs
+	}
+	return sortByFound(searchWowDirs())
+}
+
+func knownWowDirs() []string {
 	home, _ := os.UserHomeDir()
 	var patterns []string
 	switch runtime.GOOS {
@@ -133,9 +141,13 @@ func existingDirs(patterns []string) []string {
 			}
 		}
 	}
-	// Ordner mit gefundener WowFT.lua zuerst vorschlagen.
-	sort.SliceStable(out, func(i, j int) bool {
-		return len(FindSavedVariables(out[i])) > 0 && len(FindSavedVariables(out[j])) == 0
+	return sortByFound(out)
+}
+
+// sortByFound schlägt Ordner mit vorhandener WowFT.lua zuerst vor.
+func sortByFound(dirs []string) []string {
+	sort.SliceStable(dirs, func(i, j int) bool {
+		return len(FindSavedVariables(dirs[i])) > 0 && len(FindSavedVariables(dirs[j])) == 0
 	})
-	return out
+	return dirs
 }

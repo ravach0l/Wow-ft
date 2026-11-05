@@ -29,11 +29,32 @@ func run() int {
 		autostart  = flag.String("autostart", "", "on oder off: beim Windows-Start ausführen")
 		background = flag.Bool("background", false, "ohne sichtbares Fenster laufen (Windows)")
 		version    = flag.Bool("version", false, "Version anzeigen")
+		find       = flag.Bool("find", false, "WoW-Installationen suchen und anzeigen")
 	)
 	flag.Parse()
 
 	if *version {
 		fmt.Println("wowft-uploader", Version)
+		return 0
+	}
+	if *find {
+		fmt.Println("Suche WoW-Installationen …")
+		dirs := append(knownWowDirs(), searchWowDirs()...)
+		seen := map[string]bool{}
+		for _, d := range dirs {
+			if seen[d] {
+				continue
+			}
+			seen[d] = true
+			fmt.Println(d)
+			for _, f := range FindSavedVariables(d) {
+				fmt.Println("   ", f)
+			}
+		}
+		if len(seen) == 0 {
+			fmt.Println("Nichts gefunden.")
+			return 1
+		}
 		return 0
 	}
 

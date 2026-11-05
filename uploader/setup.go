@@ -52,7 +52,14 @@ func RunSetup(in io.Reader, out io.Writer, old *Config) (*Config, error) {
 		c.Token = tok
 	}
 
-	guesses := GuessWowDirs()
+	guesses := knownWowDirs()
+	if len(guesses) == 0 {
+		fmt.Fprintln(out, "Suche die WoW-Installation auf diesem Rechner (bis zu 20 Sekunden) …")
+		guesses = sortByFound(searchWowDirs())
+	}
+	if len(guesses) == 0 {
+		fmt.Fprintln(out, "Nichts gefunden. Bitte den Ordner angeben, in dem die WoW-Programmdatei liegt.")
+	}
 	def := c.WowDir
 	if def == "" && len(guesses) > 0 {
 		def = guesses[0]
