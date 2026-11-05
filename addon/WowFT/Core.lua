@@ -219,9 +219,8 @@ function handlers.PLAYER_XP_UPDATE()
 end
 
 function handlers.PLAYER_LOGOUT()
-  if char then
-    ns.Collect.All(char)
-  end
+  -- Hier nichts sammeln: Beim Logout/Reload liefern Berufe-, Taschen- und Ausrüstungs-APIs leere
+  -- Listen und würden den guten Stand überschreiben. Der steht von Login und Ereignissen her bereit.
   TakeSnapshot("logout")
 end
 

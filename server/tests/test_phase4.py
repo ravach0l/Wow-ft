@@ -192,3 +192,14 @@ def test_garbage_snapshots_are_dropped(make_client, sv_text):
     snaps = alice.get(f"/api/characters/{cid}/history").json()["snapshots"]
     assert snaps and all(s["level"] >= 12 for s in snaps)
     assert alice.get(f"/api/characters/{cid}/history").json()["character"]["level"] >= 12
+
+
+def test_empty_lists_do_not_wipe_known_state():
+    from wowft.ingest import keep_known
+
+    prev = {"skills": [{"name": "Bergbau"}], "equipment": [], "materials": {"bags": [{"id": 1}]}}
+    new = {"skills": [], "equipment": [], "reputation": [], "materials": {"bags": []}, "deaths": 2}
+    got = keep_known(prev, new)
+    assert "skills" not in got  # Müll beim Logout: bisheriger Stand bleibt
+    assert got["equipment"] == [] and got["reputation"] == []  # vorher nichts: übernehmen
+    assert got["materials"] == {"bags": []} and got["deaths"] == 2  # leere Taschen sind echt

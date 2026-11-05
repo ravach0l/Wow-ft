@@ -233,6 +233,18 @@ def _plausible(session: Session, character_id: int, snaps: list[SnapshotIn]) -> 
     return keep
 
 
+def keep_known(prev: dict[str, Any], new: dict[str, Any]) -> dict[str, Any]:
+    """Eine leere Liste überschreibt keinen vorhandenen Stand.
+
+    Beim Logout liefert WoW leere Berufe-, Ausrüstungs-, Ruf- und Talentlisten. Echt leer wird
+    davon nie etwas, nachdem es einmal Inhalt hatte.
+    """
+    return {k: v for k, v in new.items() if not (k in KEEP_WHEN_EMPTY and not v and prev.get(k))}
+
+
+KEEP_WHEN_EMPTY = ("skills", "equipment", "reputation", "talents")
+
+
 def store(session: Session, user: User, data: SavedVariablesIn) -> tuple[dict[str, Any], list[int]]:
     """Speichert den Upload. Gibt die Antwort und die IDs neuer Ereignisse zurück."""
     result: dict[str, Any] = {
@@ -310,8 +322,8 @@ def store(session: Session, user: User, data: SavedVariablesIn) -> tuple[dict[st
         ]
 
         # Zustand übernehmen und Änderungen als Ereignisse festhalten.
-        new_state = c.state()
         prev = dict(char.state or {})
+        new_state = keep_known(prev, c.state())
         ts_state = max((s.t for s in c.snapshots), default=ts_now)
         for type_, ekey, edata in events.derive(prev, new_state):
             rows.append(
