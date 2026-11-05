@@ -486,3 +486,23 @@ def test_settings_window_loads_current_values(lua):
     texts = [f.text for f in lua.eval("FIND_ALL('fontstring')").values()]
     assert any("wft_…den99"[:4] in t and "…" in t and "wft_vorhanden99" not in t for t in texts)
 
+
+def test_character_name_with_surname(lua):
+    # Forever: GetUnitName liefert den vollen Namen.
+    lua.execute("function GetUnitName(unit, withRealm) return 'Simmen Taler' end")
+    lua.execute("FIRE('PLAYER_LOGIN')")
+    assert char(lua).name == "Simmen Taler"
+
+
+def test_character_name_falls_back_to_unitname_pair(lua):
+    # Ohne GetUnitName: UnitName gibt (Vorname, Nachname) zurück.
+    lua.execute("GetUnitName = nil; function UnitName() return 'Simmen', 'Taler' end")
+    lua.execute("FIRE('PLAYER_LOGIN')")
+    assert char(lua).name == "Simmen Taler"
+
+
+def test_character_name_classic_single_name(lua):
+    # Klassische Namen ohne Nachnamen bleiben unverändert.
+    lua.execute("GetUnitName = nil")
+    lua.execute("FIRE('PLAYER_LOGIN')")
+    assert char(lua).name == "Testa"

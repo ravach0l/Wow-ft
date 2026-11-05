@@ -49,10 +49,27 @@ local function RegionName()
   return nil
 end
 
+-- Forever: Charaktere haben Vor- und Nachnamen. UnitName liefert beide Teile als zwei
+-- Werte (der zweite steht dort, wo sonst der Realm kommt), GetUnitName(unit, false) den
+-- zusammengesetzten Namen ("Simmen Taler").
+local function FullName()
+  if GetUnitName then
+    local ok, name = pcall(GetUnitName, "player", false)
+    if ok and type(name) == "string" and name ~= "" then
+      return name
+    end
+  end
+  local name, surname = UnitName("player")
+  if surname and surname ~= "" then
+    return name .. " " .. surname
+  end
+  return name
+end
+
 local function UpdateMeta()
   local _, classToken = UnitClass("player")
   local _, raceToken = UnitRace("player")
-  char.name = UnitName("player")
+  char.name = FullName()
   char.realm = GetRealmName() -- Forever hat keine wählbaren Realms; nur zur Info
   char.region = RegionName()
   char.class = classToken

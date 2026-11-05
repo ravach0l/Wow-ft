@@ -295,6 +295,26 @@ function Collect.Probe()
         or ("Fehler: " .. tostring(a))
     end
   end
+  -- Charaktername: Forever hat Vor- und Nachnamen, UnitName liefert nur den ersten Teil.
+  local guid = UnitGUID("player")
+  for _, check in ipairs({
+    { "UnitName", "player" }, { "UnitFullName", "player" }, { "GetUnitName", "player", true },
+    { "GetUnitName", "player", false }, { "UnitNameUnmodified", "player" }, { "UnitPVPName", "player" },
+    { "GetPlayerInfoByGUID", guid },
+  }) do
+    local fn = Resolve(check[1])
+    local key = ("%s(%s)"):format(check[1], tostring(check[3] == nil and check[2] or (check[2] .. "," .. tostring(check[3]))))
+    if type(fn) == "function" then
+      local result = { pcall(fn, check[2], check[3]) }
+      local parts = {}
+      for i = 2, #result do
+        parts[#parts + 1] = tostring(result[i])
+      end
+      report.samples["name:" .. key] = result[1] and table.concat(parts, " | ") or ("Fehler: " .. tostring(result[2]))
+    else
+      report.samples["name:" .. key] = "FEHLT"
+    end
+  end
   local ok, info = pcall(function()
     local configID = C_ClassTalents.GetActiveConfigID()
     local config = C_Traits.GetConfigInfo(configID)
