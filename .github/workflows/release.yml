@@ -21,6 +21,7 @@ jobs:
         run: |
           mkdir -p dist
           go generate ./...  # Addon aus ../addon/WowFT einbetten
+          test -f addonfiles/WowFT/WowFT.toc || { echo "Addon nicht eingebettet"; exit 1; }
           V=${GITHUB_REF_NAME#v}
           LDFLAGS="-s -w -X main.Version=$V"
           GOOS=windows GOARCH=amd64 go build -ldflags "$LDFLAGS" -o dist/wowft-uploader.exe .

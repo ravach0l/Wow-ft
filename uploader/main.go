@@ -35,6 +35,11 @@ func run() int {
 
 	if *version {
 		fmt.Println("wowft-uploader", Version)
+		if v := EmbeddedAddonVersion(); v != "" {
+			fmt.Println("enthaltenes Addon: WowFT", v)
+		} else {
+			fmt.Println("enthaltenes Addon: keins (Build ohne go generate)")
+		}
 		return 0
 	}
 	if *find {
@@ -154,6 +159,11 @@ func run() int {
 	}
 
 	logger.Printf("WowFT-Uploader %s läuft. Server: %s. Beenden mit Strg+C.", Version, cfg.Server)
+	if v := EmbeddedAddonVersion(); v != "" && cfg.AutoAddon() {
+		logger.Printf("Enthaltenes Addon: WowFT %s (wird bei Bedarf installiert bzw. aktualisiert).", v)
+	} else if v == "" {
+		logger.Printf("Hinweis: In diesem Build ist kein Addon enthalten; es wird nicht automatisch installiert.")
+	}
 	if cfg.Token == "" {
 		logger.Printf("Noch nicht gekoppelt: Ein Token oder Code fürs Spiel aus den Einstellungen im Spiel wird verwendet.")
 	}

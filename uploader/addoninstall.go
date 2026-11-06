@@ -36,6 +36,19 @@ func EmbeddedAddon() fs.FS {
 	return sub
 }
 
+// EmbeddedAddonVersion nennt die eingebettete Addon-Version ("" = keins eingebettet).
+func EmbeddedAddonVersion() string {
+	addon := EmbeddedAddon()
+	if addon == nil {
+		return ""
+	}
+	toc, err := fs.ReadFile(addon, addonName+".toc")
+	if err != nil {
+		return ""
+	}
+	return tocVersion(toc)
+}
+
 func tocVersion(toc []byte) string {
 	if m := tocVersionRe.FindSubmatch(toc); m != nil {
 		return string(m[1])
