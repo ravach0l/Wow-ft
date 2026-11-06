@@ -63,7 +63,8 @@ Ein Git-Tag `v0.1.0` startet `.github/workflows/release.yml` und hängt an das R
 `wowft-uploader.exe` (Windows), Linux (amd64, arm64), macOS sowie `WowFT-addon.zip`.
 
 Für Freunde:
-1. `WowFT-addon.zip` nach `World of Warcraft/_<version>_/Interface/AddOns/` entpacken.
+1. Das Addon installiert der Uploader selbst (und aktualisiert es bei neuen Releases).
+   `WowFT-addon.zip` bleibt als Ersatz für Rechner, auf denen das nicht klappt.
 2. Auf der Webseite anmelden, Einladungslink öffnen und beitreten.
 3. `wowft-uploader.exe` starten, koppeln (Code im Browser bestätigen), Ordner bestätigen,
    Autostart mit „J“. Ersatzweg: im Profil „Code fürs Spiel“ erzeugen, im Spiel ins Token-Feld

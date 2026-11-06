@@ -13,10 +13,11 @@ import (
 )
 
 const (
-	settleTime     = 3 * time.Second  // WoW schreibt die Datei in mehreren Schritten
-	rediscoverTime = 60 * time.Second // neue Accounts/Ordner finden
-	minBackoff     = 5 * time.Second
-	maxBackoff     = 5 * time.Minute
+	settleTime      = 3 * time.Second  // WoW schreibt die Datei in mehreren Schritten
+	rediscoverTime  = 60 * time.Second // neue Accounts/Ordner finden
+	addonCheckEvery = time.Hour        // Addon im Spielordner prüfen und ggf. aktualisieren
+	minBackoff      = 5 * time.Second
+	maxBackoff      = 5 * time.Minute
 )
 
 type Uploader interface {
@@ -41,11 +42,12 @@ type Watcher struct {
 	statePath string
 	log       *log.Logger
 
-	files        []string
-	lastDiscover time.Time
-	state        map[string]*fileState
-	uploaded     map[string]string // Pfad -> Hash des zuletzt hochgeladenen Inhalts; "photo:…" -> Datei
-	photoMissing map[string]bool
+	files          []string
+	lastDiscover   time.Time
+	state          map[string]*fileState
+	uploaded       map[string]string // Pfad -> Hash des zuletzt hochgeladenen Inhalts; "photo:…" -> Datei
+	photoMissing   map[string]bool
+	lastAddonCheck time.Time
 	// CfgPath: Hier wird ein per Code aus dem Spiel geholter Token gespeichert (leer: nicht speichern).
 	CfgPath string
 	// LastSuccess ist der Zeitpunkt des letzten erfolgreichen Uploads.
@@ -92,6 +94,10 @@ func (w *Watcher) discover(now time.Time) {
 // Poll führt einen Prüfdurchlauf aus und gibt die Zahl erfolgreicher Uploads zurück.
 func (w *Watcher) Poll(now time.Time) int {
 	w.discover(now)
+	if w.cfg.AutoAddon() && (w.lastAddonCheck.IsZero() || now.Sub(w.lastAddonCheck) >= addonCheckEvery) {
+		w.lastAddonCheck = now
+		EnsureAddon(w.cfg.WowDir, w.log.Printf)
+	}
 	done := 0
 	for _, path := range w.files {
 		if w.pollFile(path, now) {

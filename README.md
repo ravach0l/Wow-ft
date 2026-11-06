@@ -29,6 +29,6 @@ Spiel ──► addon/ (WowFT.lua) ──► uploader/ (Go) ──► server/ (F
 ```sh
 pytest addon/tests                                  # Addon (mit lupa)
 cd server && pytest && ruff check .                 # Server
-cd uploader && go test ./...                        # Uploader
+cd uploader && go generate ./... && go test ./...                        # Uploader
 cd web && npm test && npm run build                 # Web
 ```

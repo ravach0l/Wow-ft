@@ -68,6 +68,7 @@ Charaktere werden über die **GUID** identifiziert, weil Forever keine Realms ha
 | `main.go` | Flags: `-setup`, `-once`, `-find`, `-autostart on\|off`, `-background`, `-config` |
 | `addonsettings.go` | Liest Server und Token aus `WowFTDB.upload` (Vorrang vor `config.json`) und leert den Token vor dem Upload |
 | `setup.go` | Einrichtungsdialog (Server, Kopplung, WoW-Ordner) |
+| `addoninstall.go` | Bettet das Addon ein (`go generate` kopiert `addon/WowFT` nach `addonfiles/`), installiert es in den Forever-Spielordner und aktualisiert ältere Versionen (Vergleich über `## Version` in der `.toc`; neuere bleiben). Beim Start und stündlich; abschaltbar mit `"addonInstall": false` in `config.json` |
 | `pair.go` | Kopplung: Gerätecode anzeigen, Browser öffnen, Token abholen; Code fürs Spiel (`WFT-XXXX-XXXX`) aus `WowFTDB.upload` einlösen |
 | `discover.go` | Findet `WowFT.lua` unter dem WoW-Ordner (Groß-/Kleinschreibung egal); bekannte Installationsorte inkl. Lutris, Bottles, Steam/Proton, Heroic |
 | `search.go` | Fallback: durchsucht Laufwerke bzw. Home nach `Wow*.exe` oder `WTF`+`Interface` (Exe-Name von Forever ist unbekannt) |
@@ -235,7 +236,7 @@ Beispieldaten ohne Spiel: `fixtures/WowFT.lua` (enthält alle Felder) – im Pro
 ```sh
 pip install pytest lupa && pytest addon/tests        # Addon mit eingebettetem Lua
 cd server && pytest && ruff check . && ruff format --check .
-cd uploader && go vet ./... && go test ./...
+cd uploader && go generate ./... && go vet ./... && go test ./...
 cd web && npm test && npm run build
 ```
 
@@ -244,6 +245,8 @@ cd web && npm test && npm run build
 - **Datenvertrag zuerst:** Neue Werte zuerst in `docs/datenvertrag.md` und `fixtures/WowFT.lua`,
   dann Addon → Server (`ingest.py`, Pydantic-Modell) → Web. `fixtures/ingest.json` wird aus der
   Lua-Datei erzeugt (`python -m wowft.svparse ../fixtures/WowFT.lua`).
+- **Addon-Version hochzählen** (`## Version` in `WowFT.toc` und `ns.VERSION` in `Util.lua`), wenn sich
+  das Addon ändert. Nur dann ersetzt der Uploader die installierte Version bei den Freunden.
 - **Neue Felder sind optional**, damit alte Addon-Versionen weiter hochladen können.
 - **Addon-Code, der WoW-Funktionen aufruft, in `pcall`** (Forever kann abweichen).
 - **Datenbank nur per neuer Alembic-Migration ändern**

@@ -111,9 +111,12 @@ func run() int {
 	statePath := filepath.Join(baseDir, "state.json")
 
 	if *once {
+		if cfg.AutoAddon() {
+			EnsureAddon(cfg.WowDir, logger.Printf)
+		}
 		files := append(append([]string{}, cfg.Files...), FindSavedVariables(cfg.WowDir)...)
 		if len(files) == 0 {
-			logger.Printf("Keine %s gefunden unter %s", svName, cfg.WowDir)
+			logger.Printf("Noch keine %s unter %s: im Spiel einloggen, danach /reload oder ausloggen.", svName, cfg.WowDir)
 			return 1
 		}
 		failed := false

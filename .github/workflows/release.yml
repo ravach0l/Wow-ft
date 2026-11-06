@@ -20,6 +20,7 @@ jobs:
         working-directory: uploader
         run: |
           mkdir -p dist
+          go generate ./...  # Addon aus ../addon/WowFT einbetten
           V=${GITHUB_REF_NAME#v}
           LDFLAGS="-s -w -X main.Version=$V"
           GOOS=windows GOARCH=amd64 go build -ldflags "$LDFLAGS" -o dist/wowft-uploader.exe .

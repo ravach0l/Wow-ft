@@ -119,9 +119,12 @@ func RunSetup(in io.Reader, out io.Writer, old *Config) (*Config, error) {
 	if err := c.Validate(); err != nil {
 		return nil, err
 	}
+	if c.AutoAddon() {
+		EnsureAddon(c.WowDir, func(format string, args ...any) { fmt.Fprintf(out, format+"\n", args...) })
+	}
 	files := FindSavedVariables(c.WowDir)
 	if len(files) == 0 {
-		fmt.Fprintf(out, "Hinweis: noch keine %s gefunden. Das Addon installieren, einloggen und /reload eingeben.\n", svName)
+		fmt.Fprintf(out, "Noch keine %s: Im Spiel einloggen, danach schickt der Uploader den Stand bei jedem Logout oder /reload.\n", svName)
 	} else {
 		for _, f := range files {
 			fmt.Fprintf(out, "Gefunden: %s\n", f)

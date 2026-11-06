@@ -1,8 +1,8 @@
 # WowFT einrichten (Windows)
 
 Mit WowFT sieht unsere Runde auf einer Webseite, wer welches Level hat, was passiert ist
-und welche Materialien jeder dabeihat. Dafür brauchst du ein kleines Addon im Spiel und ein
-kleines Programm, das die Daten hochlädt. Dauert etwa 10 Minuten.
+und welche Materialien jeder dabeihat. Dafür brauchst du ein kleines Programm, den Uploader.
+Er installiert auch das Addon im Spiel. Dauert etwa 5 Minuten.
 
 **Du brauchst:** Windows, WoW Forever und von Dominic zwei Links:
 einen **Konto-Einladungslink** und einen **Gruppen-Link**.
@@ -16,15 +16,7 @@ einen **Konto-Einladungslink** und einen **Gruppen-Link**.
 Melde dich auf <https://wow.the-birds.xyz> an, öffne dann den Gruppen-Link und klicke auf
 **Beitreten**.
 
-## 3. Addon installieren
-
-1. Lade [WowFT-addon.zip](https://github.com/ravach0l/Wow-ft/releases/latest/download/WowFT-addon.zip) herunter.
-2. Entpacke die ZIP-Datei so, dass der Ordner `WowFT` hier landet:
-   `C:\Program Files (x86)\World of Warcraft\_forever_\Interface\AddOns\`
-   (Liegt WoW woanders, nimm den Ordner `_forever_` deiner Installation.)
-3. Starte WoW. Unter „Addons“ sollte **WowFT** aktiv sein.
-
-## 4. Uploader installieren und koppeln
+## 3. Uploader installieren und koppeln
 
 1. Lade [wowft-uploader.exe](https://github.com/ravach0l/Wow-ft/releases/latest/download/wowft-uploader.exe) herunter
    und lege sie in einen festen Ordner, zum Beispiel `Dokumente\WowFT`.
@@ -36,7 +28,8 @@ Melde dich auf <https://wow.the-birds.xyz> an, öffne dann den Gruppen-Link und 
    - **Koppeln:** Enter drücken. Der Uploader zeigt einen kurzen Code (z. B. `K7Q-4MX`) und öffnet
      die Webseite. Prüfe, dass dort derselbe Code steht, und klicke auf **Koppeln**.
      Einen Token musst du nicht kopieren.
-   - **WoW-Ordner:** den gefundenen Ordner bestätigen.
+   - **WoW-Ordner:** den gefundenen Ordner bestätigen. Der Uploader installiert jetzt das
+     Addon **WowFT** selbst und hält es später aktuell.
    - **Autostart:** `J`, damit der Uploader beim Anmelden von selbst startet.
 
 ### Klappt das Koppeln im Browser nicht?
@@ -48,6 +41,9 @@ Der Uploader koppelt sich damit beim nächsten Speichern selbst. Der Code gilt 1
 nur einmal.
 
 ## Fertig
+
+Starte WoW (läuft es schon: neu einloggen). Unter „Addons“ ist **WowFT** jetzt aktiv, an der
+Minimap erscheint ein kleines Buch.
 
 Spiele wie gewohnt. Sobald du dich **ausloggst oder `/reload` tippst**, erscheint dein Stand
 nach wenigen Sekunden auf der Webseite.
@@ -75,3 +71,11 @@ nach wenigen Sekunden auf der Webseite.
   (in die Adresszeile des Explorers einfügen).
 - Neuen Token erzeugt? Im Spiel eintragen (Schritt 5), `/reload`.
 - Sonst melde dich bei Dominic und schick ihm die Log-Datei.
+
+### Addon von Hand installieren
+
+Nur nötig, wenn der Uploader meldet, dass er das Addon nicht installieren konnte (z. B. fehlende
+Schreibrechte oder mehrere Spielversionen ohne Forever-Ordner):
+[WowFT-addon.zip](https://github.com/ravach0l/Wow-ft/releases/latest/download/WowFT-addon.zip)
+herunterladen und so entpacken, dass der Ordner `WowFT` in
+`World of Warcraft\_forever_\Interface\AddOns\` liegt.
