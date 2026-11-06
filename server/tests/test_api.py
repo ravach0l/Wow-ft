@@ -120,13 +120,15 @@ def test_overview_and_visibility(make_client, sv_text):
     assert testa["zone"] == 'Dämmerwald "Duskwood"'
     assert testa["behindLeader"] == 0
     assert by_name["Twinka"]["behindLeader"] > 0
-    # Die Spielzeit ist für andere verborgen, solange der Rennen-Modus aus ist (Standard);
-    # das Tempo wird trotzdem berechnet. Mit Modus an: tests/test_privacy.py.
+    # Die Spielzeit ist für andere verborgen, solange der Rennen-Modus aus ist (Standard),
+    # das Tempo ebenfalls (Standard: nicht freigegeben). Details: tests/test_privacy.py.
     assert testa["playedTotal"] is None and testa["playedLevel"] is None
-    # 13 -> 13: 3060 XP in 1600 s Spielzeit, zwischen 12 und 13: über Levelgrenze
-    assert testa["xpPerHour"] > 0
-    assert testa["etaSeconds"] > 0
+    assert testa["xpPerHour"] is None and testa["etaSeconds"] is None
     assert testa["gold"] is None
+    # Der Besitzer sieht sein Tempo: 13 -> 13, 3060 XP in 1600 s Spielzeit, über die Levelgrenze
+    mine = bob.get(f"/api/groups/{g['id']}/overview").json()["characters"]
+    own = next(c for c in mine if c["name"] == "Testa")
+    assert own["xpPerHour"] > 0 and own["etaSeconds"] > 0
 
     twinka_id = by_name["Twinka"]["id"]
     assert bob.patch(f"/api/characters/{twinka_id}", json={"visible": False}).json()["visible"] is False

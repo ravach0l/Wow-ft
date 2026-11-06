@@ -40,12 +40,17 @@ def overview_of(client, g, cid):
     return next(c for c in ov["characters"] if c["id"] == cid)
 
 
-def test_defaults_show_everything_except_gold(world):
-    alice, _, g, cid, _ = world
+def test_defaults_show_everything_except_gold_and_rate(world):
+    alice, bob, g, cid, _ = world
     c = overview_of(alice, g, cid)
     assert c["playedTotal"] is not None and c["zone"] and c["deaths"] == 2
-    assert c["gold"] is None  # wie bisher: Gold ist standardmäßig verborgen
-    assert c["hidden"] == ["gold"]
+    assert c["gold"] is None  # Gold ist standardmäßig verborgen
+    # Tempo auch: Aus Tempo und Gesamt-XP ließe sich die Spielzeit errechnen.
+    assert (c["xpPerHour"], c["etaSeconds"]) == (None, None)
+    assert c["hidden"] == ["gold", "rate"]
+    assert bob.get("/api/me/characters").json()[0]["share"]["rate"] is False
+    # Der Besitzer sieht sein Tempo trotzdem.
+    assert overview_of(bob, g, cid)["xpPerHour"] is not None
     h = alice.get(f"/api/characters/{cid}/history").json()
     assert h["state"]["equipment"] and h["state"]["skills"] and h["state"]["reputation"]
     assert h["state"]["talents"] and h["state"]["materials"]
@@ -53,6 +58,7 @@ def test_defaults_show_everything_except_gold(world):
 
 def test_pace_hides_playtime_only(world):
     alice, bob, g, cid, _ = world
+    share(bob, cid, rate=True)
     before = overview_of(alice, g, cid)
     assert before["playedTotal"] is not None and before["xpPerHour"] is not None
     share(bob, cid, pace=False)
@@ -70,9 +76,11 @@ def test_pace_hides_playtime_only(world):
     assert own["playedTotal"] == before["playedTotal"] and own["hidden"] == []
 
 
-def test_rate_can_be_hidden_separately(world):
+def test_rate_can_be_shared_and_hidden_again(world):
     alice, bob, g, cid, _ = world
+    share(bob, cid, rate=True)
     before = overview_of(alice, g, cid)
+    assert before["xpPerHour"] is not None and before["etaSeconds"] is not None
     share(bob, cid, rate=False)
     c = overview_of(alice, g, cid)
     assert (c["xpPerHour"], c["etaSeconds"]) == (None, None)
@@ -82,6 +90,7 @@ def test_rate_can_be_hidden_separately(world):
 
 def test_playtime_only_visible_while_race_mode_is_on(world):
     alice, bob, g, cid, _ = world
+    share(bob, cid, rate=True)
     on = overview_of(alice, g, cid)
     assert on["playedTotal"] is not None and on["xpPerHour"] is not None
 

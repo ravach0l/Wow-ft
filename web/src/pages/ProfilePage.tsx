@@ -122,6 +122,8 @@ function Characters() {
                 <summary>Was sehen die anderen?</summary>
                 <p className="muted" style={{ margin: "8px 0" }}>
                   Level und XP sind immer sichtbar. Du selbst siehst von deinen Charakteren immer alles.
+                  Gold und Tempo sind standardmäßig aus. Aus dem Tempo (XP pro Stunde) und dem Level lässt sich
+                  deine Spielzeit ungefähr errechnen.
                 </p>
                 <div className="share-grid">
                   {SHARE_CATEGORIES.map((cat) => (
@@ -137,8 +139,8 @@ function Characters() {
                 </div>
                 {!me.features.race && (
                   <p className="muted" style={{ margin: "8px 0 0" }}>
-                    Spielzeit und Tempo sehen andere erst, wenn ein Admin den Rennen-Modus einschaltet. Bis dahin
-                    bleiben sie verborgen, egal wie du hier einstellst.
+                    Deine Spielzeit sehen andere erst, wenn ein Admin den Rennen-Modus einschaltet. Bis dahin
+                    bleibt sie verborgen, egal wie du hier einstellst.
                   </p>
                 )}
               </details>

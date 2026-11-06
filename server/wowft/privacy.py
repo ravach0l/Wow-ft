@@ -1,9 +1,9 @@
 """Freigaben: Was Gruppenmitglieder von einem Charakter sehen.
 
 Level und XP sind immer sichtbar (sonst gäbe es nichts zu vergleichen). Alles andere
-kann der Besitzer je Charakter ausblenden. Der Besitzer sieht seine eigenen Charaktere
-immer vollständig. Die Prüfung passiert hier auf dem Server; ausgeblendete Daten
-verlassen ihn gar nicht erst (API, Feed, Foto-Abruf, Discord).
+kann der Besitzer je Charakter ausblenden; standardmäßig verborgen sind Gold und Tempo.
+Der Besitzer sieht seine eigenen Charaktere immer vollständig. Die Prüfung passiert hier
+auf dem Server; ausgeblendete Daten verlassen ihn gar nicht erst (API, Feed, Foto-Abruf, Discord).
 
 Die Schlüssel stehen auch in `web/src/privacy.ts` (mit deutschen Bezeichnungen).
 """
@@ -27,7 +27,8 @@ CATEGORIES: tuple[Category, ...] = (
     # Spielzeit: für andere nur bei eingeschaltetem Rennen-Modus sichtbar (siehe hidden_for).
     Category("pace", "Spielzeit", True),
     # Tempo (XP pro Stunde, Zeit bis zum Maximallevel): unabhängig vom Rennen-Modus.
-    Category("rate", "Tempo (XP pro Stunde)", True),
+    # Standardmäßig aus: Aus Tempo und Gesamt-XP lässt sich die Spielzeit ungefähr errechnen.
+    Category("rate", "Tempo (XP pro Stunde)", False),
     Category("gold", "Gold", False),
     Category("zone", "Aufenthaltsort", True),
     Category("gear", "Ausrüstung", True),

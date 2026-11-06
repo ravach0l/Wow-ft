@@ -126,12 +126,13 @@ Kategorien ausblenden (Profil → „Was sehen die anderen?“): Spielzeit, Temp
 Ausrüstung, Berufe, Ruf, Talente, Materialien, Tode, Boss-Kills, Foto. Level und XP sind immer sichtbar;
 der Besitzer sieht seine Charaktere selbst immer vollständig. Entscheidend ist `server/wowft/privacy.py`:
 Die Prüfung läuft auf dem Server und gilt für Übersicht, Detailseite, Feed, Material, Rennen, Foto-Abruf
-und Discord. Ausgeblendetes verlässt den Server nicht. Standard: alles sichtbar außer Gold.
+und Discord. Ausgeblendetes verlässt den Server nicht. Standard: alles sichtbar außer Gold und Tempo.
 
 **Spielzeit** ist für andere **nur sichtbar, wenn der Rennen-Modus an ist**, selbst wenn der Besitzer
 sie freigegeben hat (Modus standardmäßig aus; dann gibt es auch die Spielzeit-Achse und -Sortierung nicht).
-**Tempo** (XP/Std., Zeit bis Maximallevel) wird trotzdem berechnet und gezeigt; es hat eine eigene
-Freigabe (`rate`) und hängt nicht am Rennen-Modus.
+**Tempo** (XP/Std., Zeit bis Maximallevel) hat eine eigene Freigabe (`rate`), hängt nicht am
+Rennen-Modus und ist **standardmäßig aus**: Aus Tempo und Gesamt-XP ließe sich die Spielzeit
+ungefähr errechnen. Wer es zeigen will, gibt es selbst frei.
 
 **Zwei getrennte Schlüssel:** Login (Authentik) für die Webseite, Upload-Token für den Uploader.
 Auf dem Spielrechner steht nie ein Passwort.

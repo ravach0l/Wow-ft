@@ -6,7 +6,11 @@ export const SHARE_CATEGORIES: { key: string; label: string; hint?: string }[] =
     label: "Spielzeit",
     hint: "Andere sehen sie nur, wenn der Rennen-Modus an ist.",
   },
-  { key: "rate", label: "Tempo (XP pro Stunde)", hint: "Auch die Zeit bis zum Maximallevel." },
+  {
+    key: "rate",
+    label: "Tempo (XP pro Stunde)",
+    hint: "Auch die Zeit bis zum Maximallevel. Standardmäßig aus: Aus Tempo und Level lässt sich die Spielzeit ungefähr errechnen.",
+  },
   { key: "gold", label: "Gold" },
   { key: "zone", label: "Aufenthaltsort" },
   { key: "gear", label: "Ausrüstung" },
