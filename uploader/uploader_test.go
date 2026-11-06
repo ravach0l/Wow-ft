@@ -217,20 +217,48 @@ func TestWatcherBackoffAndPermanentErrors(t *testing.T) {
 
 func TestRunSetup(t *testing.T) {
 	searchWowDirs = func() []string { return nil }
-	t.Cleanup(func() { searchWowDirs = SearchWowDirsDefault })
+	paired := 0
+	pairDevice = func(server string, out io.Writer) (string, error) {
+		paired++
+		return "wft_gekoppelt", nil
+	}
+	redeemCode = func(server, code string) (string, error) { return "wft_auscode", nil }
+	t.Cleanup(func() {
+		searchWowDirs = SearchWowDirsDefault
+		pairDevice = func(server string, out io.Writer) (string, error) { return PairDevice(NewClient(server, ""), out) }
+		redeemCode = func(server, code string) (string, error) {
+			tok, _, err := NewClient(server, "").RedeemGameCode(code, DeviceName())
+			return tok, err
+		}
+	})
 	wow := t.TempDir()
-	in := strings.NewReader("\nwft_neu\n" + wow + "\n")
 	var out bytes.Buffer
-	c, err := RunSetup(in, &out, nil)
+
+	// Standard: Enter, Enter -> koppeln.
+	c, err := RunSetup(strings.NewReader("\n\n"+wow+"\n"), &out, nil)
 	if err != nil {
 		t.Fatal(err)
 	}
-	if c.Server != DefaultServer || c.Token != "wft_neu" || c.WowDir != wow {
-		t.Fatalf("%+v", c)
+	if c.Server != DefaultServer || c.Token != "wft_gekoppelt" || c.WowDir != wow || paired != 1 {
+		t.Fatalf("%+v paired=%d", c, paired)
 	}
-	// Vorhandenen Token beibehalten, wenn nur Enter gedrückt wird.
+	// Schon gekoppelt: Enter behält den Token, keine neue Kopplung.
 	c2, err := RunSetup(strings.NewReader("\n\n\n"), &out, c)
-	if err != nil || c2.Token != "wft_neu" {
-		t.Fatalf("%+v %v", c2, err)
+	if err != nil || c2.Token != "wft_gekoppelt" || paired != 1 {
+		t.Fatalf("%+v %v paired=%d", c2, err, paired)
+	}
+	// Schon gekoppelt, aber neu koppeln.
+	if c3, _ := RunSetup(strings.NewReader("\nj\n\n"), &out, c); paired != 2 || c3.Token != "wft_gekoppelt" {
+		t.Fatalf("neu koppeln: paired=%d", paired)
+	}
+	// Nicht koppeln, Token von Hand.
+	c4, err := RunSetup(strings.NewReader("\nn\nwft_hand\n"+wow+"\n"), &out, nil)
+	if err != nil || c4.Token != "wft_hand" {
+		t.Fatalf("%+v %v", c4, err)
+	}
+	// Nicht koppeln, Code fürs Spiel von Hand: wird sofort eingelöst.
+	c5, err := RunSetup(strings.NewReader("\nn\nwft-abcd-efgh\n"+wow+"\n"), &out, nil)
+	if err != nil || c5.Token != "wft_auscode" {
+		t.Fatalf("%+v %v", c5, err)
 	}
 }

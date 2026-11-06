@@ -62,7 +62,9 @@ func (c *Client) post(path, contentType string, body io.Reader, gzipped bool) ([
 	if err != nil {
 		return nil, &UploadError{Message: err.Error(), Permanent: true}
 	}
-	req.Header.Set("Authorization", "Bearer "+c.Token)
+	if c.Token != "" {
+		req.Header.Set("Authorization", "Bearer "+c.Token)
+	}
 	req.Header.Set("Content-Type", contentType)
 	if gzipped {
 		req.Header.Set("Content-Encoding", "gzip")

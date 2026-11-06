@@ -46,6 +46,8 @@ type Watcher struct {
 	state        map[string]*fileState
 	uploaded     map[string]string // Pfad -> Hash des zuletzt hochgeladenen Inhalts; "photo:…" -> Datei
 	photoMissing map[string]bool
+	// CfgPath: Hier wird ein per Code aus dem Spiel geholter Token gespeichert (leer: nicht speichern).
+	CfgPath string
 	// LastSuccess ist der Zeitpunkt des letzten erfolgreichen Uploads.
 	LastSuccess time.Time
 }
@@ -127,9 +129,10 @@ func (w *Watcher) pollFile(path string, now time.Time) bool {
 		return false
 	}
 
+	w.redeemGameCode(content)
 	server, token := EffectiveCredentials(w.cfg, content)
 	if token == "" {
-		w.log.Printf("Kein Upload-Token: im Spiel unter Einstellungen (Minimap-Button) eintragen und /reload, oder den Uploader mit -setup einrichten.")
+		w.log.Printf("Noch nicht gekoppelt: den Uploader mit -setup starten, oder auf der Webseite unter Profil einen Code fürs Spiel erzeugen, im Spiel eintragen und /reload.")
 		fs.failedHash = hash
 		return false
 	}
@@ -143,7 +146,7 @@ func (w *Watcher) pollFile(path string, now time.Time) bool {
 		if errors.As(err, &ue) && ue.Permanent {
 			fs.failedHash = hash
 			if ue.Status == 401 {
-				w.log.Printf("Upload abgelehnt: Token ungültig oder widerrufen. Neuen Token auf der Webseite erzeugen und den Uploader mit -setup neu einrichten.")
+				w.log.Printf("Upload abgelehnt: Token ungültig oder widerrufen. Neu koppeln: den Uploader mit -setup starten oder auf der Webseite unter Profil einen Code fürs Spiel erzeugen.")
 			} else {
 				w.log.Printf("Upload abgelehnt (%v). Neuer Versuch, sobald sich die Datei ändert.", err)
 			}
@@ -237,4 +240,52 @@ func (w *Watcher) Run(stop <-chan struct{}) {
 			w.Poll(now)
 		}
 	}
+}
+
+// GameCodeRedeemer kann einen Code aus dem Spiel gegen einen Token tauschen.
+type GameCodeRedeemer interface {
+	RedeemGameCode(code, deviceName string) (token, user string, err error)
+}
+
+// redeemGameCode tauscht einen im Spiel eingetragenen Code (WFT-XXXX-XXXX) einmalig
+// gegen einen Upload-Token und speichert ihn in der Konfiguration. Der Code bleibt in
+// der Datei stehen, bis man ihn im Spiel löscht; bereits benutzte Codes werden übergangen.
+func (w *Watcher) redeemGameCode(content []byte) {
+	a := ReadAddonSettings(content)
+	if !IsGameCode(a.Token) {
+		return
+	}
+	key := "gamecode:" + NormalizeCode(a.Token)
+	if w.uploaded[key] != "" {
+		return
+	}
+	r, ok := w.up.(GameCodeRedeemer)
+	if !ok {
+		return
+	}
+	if c, ok := w.up.(Credentialed); ok {
+		server, _ := EffectiveCredentials(w.cfg, content)
+		c.SetCredentials(server, "")
+	}
+	token, user, err := r.RedeemGameCode(a.Token, DeviceName())
+	if err != nil {
+		var ue *UploadError
+		if errors.As(err, &ue) && ue.Permanent {
+			w.uploaded[key] = "ungültig"
+			w.saveState()
+			w.log.Printf("Code aus dem Spiel ungültig, schon benutzt oder abgelaufen (%v). Auf der Webseite unter Profil einen neuen erzeugen.", err)
+		} else {
+			w.log.Printf("Code aus dem Spiel konnte nicht eingelöst werden (%v), neuer Versuch beim nächsten Speichern.", err)
+		}
+		return
+	}
+	w.cfg.Token = token
+	if w.CfgPath != "" {
+		if err := SaveConfig(w.CfgPath, w.cfg); err != nil {
+			w.log.Printf("Konfiguration konnte nicht gespeichert werden: %v", err)
+		}
+	}
+	w.uploaded[key] = "eingelöst"
+	w.saveState()
+	w.log.Printf("Mit dem Code aus dem Spiel gekoppelt (Konto „%s“). Den Code kannst du im Spiel wieder löschen.", user)
 }

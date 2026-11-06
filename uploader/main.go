@@ -118,6 +118,7 @@ func run() int {
 		}
 		failed := false
 		w := NewWatcher(cfg, client, statePath, logger)
+		w.CfgPath = *configPath
 		for _, f := range files {
 			content, err := os.ReadFile(f)
 			if err != nil {
@@ -125,9 +126,10 @@ func run() int {
 				failed = true
 				continue
 			}
+			w.redeemGameCode(content)
 			server, token := EffectiveCredentials(cfg, content)
 			if token == "" {
-				logger.Printf("%s: kein Upload-Token (im Spiel unter Einstellungen eintragen oder -setup)", f)
+				logger.Printf("%s: noch nicht gekoppelt (-setup, oder Code fürs Spiel im Spiel eintragen)", f)
 				failed = true
 				continue
 			}
@@ -150,9 +152,10 @@ func run() int {
 
 	logger.Printf("WowFT-Uploader %s läuft. Server: %s. Beenden mit Strg+C.", Version, cfg.Server)
 	if cfg.Token == "" {
-		logger.Printf("Kein Token in der Konfiguration: Er wird aus den Einstellungen im Spiel gelesen.")
+		logger.Printf("Noch nicht gekoppelt: Ein Token oder Code fürs Spiel aus den Einstellungen im Spiel wird verwendet.")
 	}
 	w := NewWatcher(cfg, client, statePath, logger)
+	w.CfgPath = *configPath
 	stop := make(chan struct{})
 	sig := make(chan os.Signal, 1)
 	signal.Notify(sig, os.Interrupt, syscall.SIGTERM)

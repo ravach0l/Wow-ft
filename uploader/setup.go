@@ -2,13 +2,25 @@ package main
 
 import (
 	"bufio"
+	"errors"
 	"fmt"
 	"io"
 	"strconv"
 	"strings"
 )
 
-// RunSetup fragt Server, Token und WoW-Ordner ab. Vorhandene Werte sind Vorgaben.
+// pairDevice ist austauschbar, damit Tests ohne Server und Browser auskommen.
+var pairDevice = func(server string, out io.Writer) (string, error) {
+	return PairDevice(NewClient(server, ""), out)
+}
+
+// redeemCode tauscht einen Code fürs Spiel direkt im Einrichtungsdialog ein.
+var redeemCode = func(server, code string) (string, error) {
+	tok, _, err := NewClient(server, "").RedeemGameCode(code, DeviceName())
+	return tok, err
+}
+
+// RunSetup fragt Server, Kopplung und WoW-Ordner ab. Vorhandene Werte sind Vorgaben.
 func RunSetup(in io.Reader, out io.Writer, old *Config) (*Config, error) {
 	r := bufio.NewReader(in)
 	ask := func(prompt, def string) (string, error) {
@@ -33,24 +45,47 @@ func RunSetup(in io.Reader, out io.Writer, old *Config) (*Config, error) {
 		*c = *old
 	}
 	fmt.Fprintln(out, "WowFT-Uploader einrichten")
-	fmt.Fprintln(out, "Den Upload-Token erzeugst du auf der Webseite unter „Profil“.")
-	fmt.Fprintln(out, "Du kannst ihn auch im Spiel unter Einstellungen (Minimap-Button) eintragen;")
-	fmt.Fprintln(out, "dann hier einfach Enter drücken.")
 	fmt.Fprintln(out)
 
 	var err error
 	if c.Server, err = ask("Server", c.Server); err != nil {
 		return nil, err
 	}
-	tokenDefault := ""
-	if c.Token != "" {
-		tokenDefault = c.Token[:min(10, len(c.Token))] + "…"
+	c.normalize()
+	if !validServer(c.Server) {
+		return nil, errors.New("Server-Adresse muss mit https:// beginnen")
 	}
-	tok, err := ask("Upload-Token", tokenDefault)
+
+	// Koppeln: Der Uploader holt sich den Token selbst, man bestätigt nur im Browser.
+	question := "Uploader jetzt mit deinem Konto koppeln? [J/n]"
+	if c.Token != "" {
+		question = fmt.Sprintf("Schon gekoppelt (%s…). Neu koppeln? [j/N]", c.Token[:min(10, len(c.Token))])
+	}
+	answer, err := ask(question, "")
 	if err != nil {
 		return nil, err
 	}
-	if tok != tokenDefault {
+	answer = strings.ToLower(answer)
+	wantPair := answer == "j" || answer == "y" || (c.Token == "" && answer == "")
+	switch {
+	case wantPair:
+		tok, err := pairDevice(c.Server, out)
+		if err != nil {
+			return nil, err
+		}
+		c.Token = tok
+	case c.Token == "" && (answer == "n" || answer == "nein"):
+		fmt.Fprintln(out, "Dann den Token hier einfügen, oder leer lassen und später auf der Webseite")
+		fmt.Fprintln(out, "unter Profil einen Code fürs Spiel erzeugen und ihn im Spiel eintragen.")
+		tok, err := ask("Upload-Token oder Code fürs Spiel", "")
+		if err != nil {
+			return nil, err
+		}
+		if IsGameCode(tok) {
+			if tok, err = redeemCode(c.Server, tok); err != nil {
+				return nil, fmt.Errorf("Code nicht eingelöst: %w", err)
+			}
+		}
 		c.Token = tok
 	}
 
