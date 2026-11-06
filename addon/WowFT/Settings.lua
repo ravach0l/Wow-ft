@@ -57,6 +57,12 @@ local function ShowStatus(text, isError)
 end
 
 local function TokenStatus()
+  local code = Util.GameCode(ns.db.upload.token)
+  if code then
+    -- Der Code ist kurzlebig und einmalig: ganz zeigen, damit man Tippfehler sieht.
+    ShowStatus("Code " .. code .. " gespeichert. Jetzt /reload, der Uploader koppelt sich.", false)
+    return
+  end
   local masked = MaskToken(ns.db.upload.token)
   if masked then
     ShowStatus("Token gespeichert (" .. masked .. ")", false)
@@ -132,7 +138,7 @@ local function Build()
   Label(frame, "Server-Adresse", 24, -52)
   serverBox = MakeEditBox(frame, -70)
 
-  Label(frame, "Upload-Token (Webseite → Profil)", 24, -104)
+  Label(frame, "Upload-Token oder Code fürs Spiel (Webseite → Profil)", 24, -104)
   tokenBox = MakeEditBox(frame, -122)
   tokenBox:SetPassword(true)
 

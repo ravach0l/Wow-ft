@@ -440,6 +440,10 @@ def test_normalize_upload(lua):
     assert n("", "geheim")[2] and n("", "wft_ mit leerzeichen")[2]
     assert n("http://wow.example.org", "")[2]  # nur https
     assert n("ftp://x", "")[2]
+    # Code fürs Spiel von der Webseite, Schreibweise egal
+    assert n("", " wft abcd-efgh ") == ("", "WFT-ABCD-EFGH", None)
+    assert n("", "WFT-ABCD-EFG")[2]  # zu kurz
+    assert n("", "WFT-ABCD-EFG0")[2]  # 0 kommt im Code nicht vor
 
 
 def settings_frame(lua):
@@ -475,6 +479,13 @@ def test_settings_window_saves_values(lua):
     assert lua.eval("WowFTDB.upload.token") == "wft_abc123"
     status = lua.eval("FIND_ALL('fontstring')")
     assert any("wft_" in (f.text or "") and "ff6666" in (f.text or "") for f in status.values())
+
+    # Code fürs Spiel: einheitlich gespeichert und im Fenster ganz angezeigt.
+    token_box.text = "wft abcd efgh"
+    save.scripts.OnClick(save)
+    assert lua.eval("WowFTDB.upload.token") == "WFT-ABCD-EFGH"
+    status = lua.eval("FIND_ALL('fontstring')")
+    assert any("Code WFT-ABCD-EFGH gespeichert" in (f.text or "") for f in status.values())
 
     # Leere Felder löschen die Werte (Schlüssel fehlen dann in der Datei).
     server_box.text, token_box.text = "", ""

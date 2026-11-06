@@ -67,7 +67,8 @@ Charaktere werden über die **GUID** identifiziert, weil Forever keine Realms ha
 |---|---|
 | `main.go` | Flags: `-setup`, `-once`, `-find`, `-autostart on\|off`, `-background`, `-config` |
 | `addonsettings.go` | Liest Server und Token aus `WowFTDB.upload` (Vorrang vor `config.json`) und leert den Token vor dem Upload |
-| `setup.go` | Einrichtungsdialog (Server, Token, WoW-Ordner) |
+| `setup.go` | Einrichtungsdialog (Server, Kopplung, WoW-Ordner) |
+| `pair.go` | Kopplung: Gerätecode anzeigen, Browser öffnen, Token abholen; Code fürs Spiel (`WFT-XXXX-XXXX`) aus `WowFTDB.upload` einlösen |
 | `discover.go` | Findet `WowFT.lua` unter dem WoW-Ordner (Groß-/Kleinschreibung egal); bekannte Installationsorte inkl. Lutris, Bottles, Steam/Proton, Heroic |
 | `search.go` | Fallback: durchsucht Laufwerke bzw. Home nach `Wow*.exe` oder `WTF`+`Interface` (Exe-Name von Forever ist unbekannt) |
 | `watch.go` | Prüft alle 5 s, wartet 3 s nach Änderung, lädt hoch, Backoff bei Netzfehlern, merkt sich Hashes in `state.json` |
@@ -89,9 +90,9 @@ Konfiguration und Log liegen in `~/.config/wowft/` bzw. `%APPDATA%\wowft\`.
 | `features.py` | Module, die Admins seitenweit schalten (bisher: Rennen) |
 | `privacy.py` | Freigaben je Charakter und Kategorie; zentrale Stelle für „wer sieht was“ |
 | `discord.py` | Posts an Gruppen-Webhooks (nur Ereignisse der letzten 12 h) |
-| `api/*.py` | Endpunkte: `ingest`, `me` (Profil, Tokens, eigene Charaktere), `groups` (Gruppen, Einladungen, Übersicht, Feed, Rennen, Material), `characters` (Verlauf/Detail), `photos`, `admin` |
-| `models.py` | Tabellen: users, groups, group_members, tokens, characters (mit `state`-JSON), snapshots, events, photos, app_settings |
-| `alembic/versions/` | Migrationen `0001` (Grundschema), `0002` (Seiteneinstellungen), `0003` (Freigaben). **Ab jetzt nur neue Migrationen anlegen, alte nicht mehr ändern.** |
+| `api/*.py` | Endpunkte: `ingest`, `me` (Profil, Tokens, eigene Charaktere), `groups` (Gruppen, Einladungen, Übersicht, Feed, Rennen, Material), `characters` (Verlauf/Detail), `photos`, `admin`, `pairing` (Uploader koppeln) |
+| `models.py` | Tabellen: users, groups, group_members, tokens, characters (mit `state`-JSON), snapshots, events, photos, app_settings, pairings |
+| `alembic/versions/` | Migrationen `0001` (Grundschema), `0002` (Seiteneinstellungen), `0003` (Freigaben), `0004` (Kopplung). **Ab jetzt nur neue Migrationen anlegen, alte nicht mehr ändern.** |
 
 Die API-Doku gibt es im laufenden Server unter `/api/docs`.
 
@@ -135,6 +136,12 @@ Rennen-Modus und ist **standardmäßig aus**: Aus Tempo und Gesamt-XP ließe sic
 ungefähr errechnen. Wer es zeigen will, gibt es selbst frei.
 
 **Zwei getrennte Schlüssel:** Login (Authentik) für die Webseite, Upload-Token für den Uploader.
+Den Token muss niemand abtippen: Der Uploader **koppelt** sich. Er zeigt einen kurzen Code und
+öffnet `/koppeln`; nach dem Klick auf „Koppeln“ holt er mit seinem geheimen Schlüssel einen neuen
+Token ab (genau einmal, Code 10 Minuten gültig). Ersatzweg: Im Profil einen „Code fürs Spiel“
+(`WFT-XXXX-XXXX`, 15 Minuten, einmalig) erzeugen, im Spiel ins Token-Feld eintragen, `/reload`;
+der Uploader tauscht ihn gegen einen Token. Der Server speichert dabei nie einen Token im Klartext;
+er entsteht erst beim Abholen (`server/wowft/api/pairing.py`).
 Auf dem Spielrechner steht nie ein Passwort.
 
 ---

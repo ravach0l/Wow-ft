@@ -36,6 +36,6 @@ export const api = {
   del: <T>(path: string) => request<T>("DELETE", path),
 };
 
-export function loginUrl(next = window.location.pathname): string {
+export function loginUrl(next = window.location.pathname + window.location.search): string {
   return `/auth/login?next=${encodeURIComponent(next)}`;
 }

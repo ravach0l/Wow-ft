@@ -60,11 +60,16 @@ function Tokens() {
       <h2>Uploader einrichten</h2>
       <ol className="steps">
         <li>Addon <code>WowFT</code> in <code>Interface/AddOns</code> kopieren, einloggen.</li>
-        <li>Hier einen Upload-Token erzeugen.</li>
-        <li>Uploader starten, Token einfügen, WoW-Ordner bestätigen.</li>
+        <li>
+          Uploader starten. Er zeigt einen Code und öffnet diese Seite; dort auf <b>Koppeln</b> klicken. Einen Token
+          brauchst du dafür nicht.
+        </li>
         <li>Nach jedem Logout oder <code>/reload</code> landet der Stand hier.</li>
       </ol>
-      <form className="inline-form" onSubmit={create} style={{ marginTop: 14 }}>
+      <GameCode />
+      <details style={{ marginTop: 14 }}>
+        <summary className="meta">Token von Hand erzeugen</summary>
+      <form className="inline-form" onSubmit={create} style={{ marginTop: 10 }}>
         <input type="text" placeholder="Name, z. B. Spiele-PC" value={name} onChange={(e) => setName(e.target.value)} maxLength={100} />
         <button className="btn primary" type="submit">Token erzeugen</button>
       </form>
@@ -77,6 +82,7 @@ function Tokens() {
           </p>
         </>
       )}
+      </details>
       {active.length > 0 && (
         <ul className="list">
           {active.map((t) => (
@@ -90,6 +96,40 @@ function Tokens() {
           ))}
         </ul>
       )}
+    </div>
+  );
+}
+
+/** Rückweg: Code im Spiel eintragen, der Uploader tauscht ihn gegen einen Token. */
+function GameCode() {
+  const [code, setCode] = useState<{ code: string; until: number } | null>(null);
+  const [error, setError] = useState<string | null>(null);
+  async function create() {
+    try {
+      const r = await api.post<{ code: string; expiresIn: number }>("/api/pair/game-code");
+      setCode({ code: r.code, until: Date.now() + r.expiresIn * 1000 });
+      setError(null);
+    } catch (e) {
+      setError((e as Error).message);
+    }
+  }
+  return (
+    <div style={{ marginTop: 14 }}>
+      <div className="meta" style={{ marginBottom: 6 }}>
+        Klappt das Koppeln im Browser nicht? Dann geht es auch über das Spiel:
+      </div>
+      <button className="btn small" onClick={create}>Code fürs Spiel erzeugen</button>
+      {code && (
+        <>
+          <div className="pair-code">{code.code}</div>
+          <p className="meta">
+            Im Spiel: Minimap-Button → Einstellungen → in das Token-Feld eintragen, <b>Speichern</b>, dann{" "}
+            <code>/reload</code>. Der Uploader koppelt sich damit. Gilt einmal und bis{" "}
+            {new Date(code.until).toLocaleTimeString("de-DE", { hour: "2-digit", minute: "2-digit" })} Uhr.
+          </p>
+        </>
+      )}
+      {error && <p className="error">{error}</p>}
     </div>
   );
 }

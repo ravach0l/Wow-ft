@@ -7,6 +7,7 @@ import FeedPage from "./pages/FeedPage";
 import InvitePage from "./pages/InvitePage";
 import MaterialsPage from "./pages/MaterialsPage";
 import OverviewPage from "./pages/OverviewPage";
+import PairPage from "./pages/PairPage";
 import ProfilePage from "./pages/ProfilePage";
 import RacePage from "./pages/RacePage";
 import type { Me } from "./types";
@@ -44,6 +45,7 @@ export default function App() {
           <Route path="/c/:charId" element={<CharacterPage />} />
           <Route path="/profil" element={<ProfilePage />} />
           <Route path="/invite/:code" element={<InvitePage />} />
+          <Route path="/koppeln" element={<PairPage />} />
           <Route path="*" element={<Navigate to="/" replace />} />
         </Routes>
       </div>

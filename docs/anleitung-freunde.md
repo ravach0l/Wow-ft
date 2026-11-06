@@ -16,12 +16,7 @@ einen **Konto-Einladungslink** und einen **Gruppen-Link**.
 Melde dich auf <https://wow.the-birds.xyz> an, öffne dann den Gruppen-Link und klicke auf
 **Beitreten**.
 
-## 3. Token erzeugen
-
-Auf der Webseite: **Profil → Token erzeugen**. Kopiere den Token (beginnt mit `wft_`).
-Er ist dein Schlüssel zum Hochladen. Gib ihn nicht weiter.
-
-## 4. Addon installieren
+## 3. Addon installieren
 
 1. Lade [WowFT-addon.zip](https://github.com/ravach0l/Wow-ft/releases/latest/download/WowFT-addon.zip) herunter.
 2. Entpacke die ZIP-Datei so, dass der Ordner `WowFT` hier landet:
@@ -29,12 +24,7 @@ Er ist dein Schlüssel zum Hochladen. Gib ihn nicht weiter.
    (Liegt WoW woanders, nimm den Ordner `_forever_` deiner Installation.)
 3. Starte WoW. Unter „Addons“ sollte **WowFT** aktiv sein.
 
-## 5. Token im Spiel eintragen
-
-Klicke an der Minimap auf den **WowFT-Button** (ein kleines Buch), füge den Token ein, klicke
-**Speichern** und tippe dann `/reload`.
-
-## 6. Uploader installieren
+## 4. Uploader installieren und koppeln
 
 1. Lade [wowft-uploader.exe](https://github.com/ravach0l/Wow-ft/releases/latest/download/wowft-uploader.exe) herunter
    und lege sie in einen festen Ordner, zum Beispiel `Dokumente\WowFT`.
@@ -43,9 +33,19 @@ Klicke an der Minimap auf den **WowFT-Button** (ein kleines Buch), füge den Tok
    nicht signiert, das ist normal.
 3. Beantworte die Fragen:
    - **Server:** Enter drücken.
-   - **Upload-Token:** Enter drücken (er steht schon im Spiel).
+   - **Koppeln:** Enter drücken. Der Uploader zeigt einen kurzen Code (z. B. `K7Q-4MX`) und öffnet
+     die Webseite. Prüfe, dass dort derselbe Code steht, und klicke auf **Koppeln**.
+     Einen Token musst du nicht kopieren.
    - **WoW-Ordner:** den gefundenen Ordner bestätigen.
    - **Autostart:** `J`, damit der Uploader beim Anmelden von selbst startet.
+
+### Klappt das Koppeln im Browser nicht?
+
+Dann geht es über das Spiel: Auf der Webseite unter **Profil → Code fürs Spiel erzeugen**
+bekommst du einen Code wie `WFT-7KQ4-MX2P`. Im Spiel auf den **WowFT-Button** an der Minimap
+(ein kleines Buch) klicken, den Code ins Token-Feld tippen, **Speichern**, dann `/reload`.
+Der Uploader koppelt sich damit beim nächsten Speichern selbst. Der Code gilt 15 Minuten und
+nur einmal.
 
 ## Fertig
 

@@ -47,11 +47,25 @@ end
 -- Regeln wie im Uploader (config.go): Token beginnt mit wft_, Server mit https://
 -- (oder http://localhost / http://127.0.0.1 zum Entwickeln).
 -- Gibt server, token zurück, bei ungültiger Eingabe nil, nil, Fehlertext.
+-- Code fürs Spiel von der Webseite (Profil): WFT-XXXX-XXXX, Schreibweise egal.
+-- Gibt ihn einheitlich formatiert zurück oder nil.
+function Util.GameCode(text)
+  local compact = (text or ""):gsub("[%s%-]", ""):upper()
+  local c = "[A-HJ-NP-Z2-9]"
+  if compact:match("^WFT" .. c:rep(8) .. "$") then
+    return ("WFT-%s-%s"):format(compact:sub(4, 7), compact:sub(8, 11))
+  end
+  return nil
+end
+
 function Util.NormalizeUpload(server, token)
   server = (server or ""):match("^%s*(.-)%s*$"):gsub("/+$", "")
   token = (token or ""):match("^%s*(.-)%s*$")
-  if token ~= "" and not token:match("^wft_[%w_%-]+$") then
-    return nil, nil, "Der Token beginnt mit wft_ und enthält keine Leerzeichen."
+  local code = Util.GameCode(token)
+  if code then
+    token = code
+  elseif token ~= "" and not token:match("^wft_[%w_%-]+$") then
+    return nil, nil, "Bitte den Token (beginnt mit wft_) oder den Code fürs Spiel (WFT-XXXX-XXXX) eintragen."
   end
   local secure = server:match("^https://%S+$")
   local local_dev = server:match("^http://localhost") or server:match("^http://127%.0%.0%.1")

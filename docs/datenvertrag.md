@@ -27,6 +27,10 @@ kein Netzwerk; die Werte stehen deshalb in der Datei, und der **Uploader liest s
 - Beim manuellen Upload auf der Webseite wird nichts entfernt: Dort sendet man die Datei selbst,
   und der Block wird vom Server verworfen.
 - Der Token liegt im Klartext in `WowFT.lua`, wie bisher in `config.json` (dort mit Rechten 600).
+- Statt eines Tokens darf im Feld auch ein **Code fürs Spiel** stehen (`WFT-XXXX-XXXX`, im Profil
+  erzeugt, 15 Minuten, einmalig). Der Uploader tauscht ihn über `POST /api/pair/redeem` gegen einen
+  Token, speichert diesen in `config.json` und übergeht den Code danach. Auch der Code wird vor dem
+  Senden aus der Datei entfernt.
 
 ## Struktur
 

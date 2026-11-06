@@ -183,3 +183,10 @@ ol.steps li { margin-bottom: 6px; }
   .char-main { min-width: 0; }
   .char-side { position: sticky; top: 12px; max-height: calc(100vh - 24px); overflow-y: auto; }
 }
+
+.pair-code {
+  font-family: ui-monospace, SFMono-Regular, Menlo, monospace; font-size: 1.6rem; font-weight: 700;
+  letter-spacing: .12em; text-align: center; padding: 14px; margin: 12px 0;
+  border: 1px dashed var(--accent); border-radius: 10px; background: var(--bg); color: var(--text);
+}
+.warn, .section p.warn { color: var(--warn); font-size: .9rem; }
