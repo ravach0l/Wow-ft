@@ -137,3 +137,26 @@ class AppSetting(Base):
 
     key: Mapped[str] = mapped_column(String(64), primary_key=True)
     value: Mapped[Any] = mapped_column(JSON)
+
+
+class Pairing(Base):
+    """Laufende Kopplung eines Uploaders (kurzlebig, wird nach Gebrauch gelöscht).
+
+    kind = "device": Der Uploader hat sie gestartet und zeigt `user_code`; ein angemeldeter
+    Nutzer bestätigt im Browser, der Uploader holt danach mit seinem geheimen Schlüssel
+    (`device_hash`) einen neuen Upload-Token ab.
+    kind = "game": Ein angemeldeter Nutzer hat im Profil einen Code fürs Spiel erzeugt; der
+    Uploader findet ihn in WowFT.lua und tauscht ihn gegen einen Upload-Token.
+    Es wird nie ein Token gespeichert: Er entsteht erst beim Abholen.
+    """
+
+    __tablename__ = "pairings"
+
+    id: Mapped[int] = mapped_column(primary_key=True)
+    kind: Mapped[str] = mapped_column(String(10))
+    user_code: Mapped[str] = mapped_column(String(16), unique=True)
+    device_hash: Mapped[str | None] = mapped_column(String(64), unique=True)
+    device_name: Mapped[str | None] = mapped_column(String(100))
+    user_id: Mapped[int | None] = mapped_column(ForeignKey("users.id", ondelete="CASCADE"))
+    created: Mapped[int] = mapped_column(Integer, default=now)
+    expires: Mapped[int] = mapped_column(Integer, index=True)
