@@ -20,8 +20,15 @@ type Config struct {
 	Files []string `json:"files,omitempty"`
 	// PollSeconds ist das Prüfintervall (Standard 5).
 	PollSeconds int `json:"pollSeconds,omitempty"`
+	// AutoUpdate: false schaltet die Selbstaktualisierung des Uploaders ab.
+	AutoUpdate *bool `json:"autoUpdate,omitempty"`
 	// AddonInstall: false schaltet das automatische Installieren/Aktualisieren des Addons ab.
 	AddonInstall *bool `json:"addonInstall,omitempty"`
+}
+
+// Updates: Soll sich der Uploader selbst aktualisieren? (Standard: ja)
+func (c *Config) Updates() bool {
+	return c.AutoUpdate == nil || *c.AutoUpdate
 }
 
 // AutoAddon: Soll der Uploader das Addon selbst installieren und aktuell halten? (Standard: ja)

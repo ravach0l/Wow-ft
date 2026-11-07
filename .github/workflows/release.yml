@@ -30,6 +30,8 @@ jobs:
           GOOS=darwin GOARCH=arm64 go build -ldflags "$LDFLAGS" -o dist/wowft-uploader-macos-arm64 .
       - name: Addon packen
         run: cd addon && zip -r ../uploader/dist/WowFT-addon.zip WowFT
+      - name: Prüfsummen (für den Auto-Updater)
+        run: cd uploader/dist && sha256sum * > SHA256SUMS.txt && cat SHA256SUMS.txt
       - uses: softprops/action-gh-release@v2
         with:
           files: uploader/dist/*

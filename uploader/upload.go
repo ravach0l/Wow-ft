@@ -11,7 +11,8 @@ import (
 	"time"
 )
 
-var Version = "0.1.0"
+// Version setzt der Release-Build (-X main.Version=…); "dev" = selbst gebaut, kein Auto-Update.
+var Version = "dev"
 
 type PhotoRequest struct {
 	CharacterID int    `json:"characterId"`

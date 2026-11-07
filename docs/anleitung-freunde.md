@@ -50,6 +50,9 @@ nach wenigen Sekunden auf der Webseite.
 
 ## Gut zu wissen
 
+- **Updates kommen von selbst:** Der Uploader prüft täglich, ob es eine neue Version gibt, und
+  aktualisiert sich und das Addon selbst. Neue Addon-Versionen wirken nach `/reload`.
+
 - **Nichts geht live:** WoW speichert die Daten nur bei Logout oder `/reload`. Die Webseite
   zeigt oben, wann der letzte Upload kam.
 - **Foto:** `/ft foto` öffnet eine Fotoansicht deines Charakters. Das Bild landet auf der Seite.

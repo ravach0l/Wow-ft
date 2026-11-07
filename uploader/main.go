@@ -30,9 +30,26 @@ func run() int {
 		background = flag.Bool("background", false, "ohne sichtbares Fenster laufen (Windows)")
 		version    = flag.Bool("version", false, "Version anzeigen")
 		find       = flag.Bool("find", false, "WoW-Installationen suchen und anzeigen")
+		update     = flag.Bool("update", false, "jetzt nach einer neuen Uploader-Version suchen und sie installieren")
 	)
 	flag.Parse()
 
+	CleanupOldExecutable()
+	if *update {
+		res, err := NewUpdater(func(f string, a ...any) { fmt.Printf(f+"\n", a...) }).Check()
+		switch {
+		case err != nil:
+			fmt.Println(err)
+			return 1
+		case Version == "dev":
+			fmt.Println("Selbst gebaute Version: keine automatischen Updates.")
+		case res.Replaced:
+			fmt.Printf("Aktualisiert auf %s. Beim nächsten Start läuft die neue Version.\n", res.Latest)
+		default:
+			fmt.Printf("Aktuell (%s).\n", Version)
+		}
+		return 0
+	}
 	if *version {
 		fmt.Println("wowft-uploader", Version)
 		if v := EmbeddedAddonVersion(); v != "" {
@@ -176,6 +193,9 @@ func run() int {
 		<-sig
 		close(stop)
 	}()
+	if cfg.Updates() {
+		go NewUpdater(logger.Printf).RunUpdates(stop)
+	}
 	w.Run(stop)
 	logger.Printf("Beendet.")
 	return 0
