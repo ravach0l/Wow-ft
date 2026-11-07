@@ -82,6 +82,14 @@ def test_ingest_rejects_bad_token_and_data(make_client, sv_text):
     assert ingest(alice, tok, b'WowFTDB = { ["schema"] = 99 }').status_code == 422
 
 
+def test_last_used_is_set_even_if_upload_is_rejected(make_client):
+    alice = make_client("alice")
+    tok = upload_token(alice)
+    assert alice.get("/api/tokens").json()[0]["lastUsed"] is None
+    assert ingest(alice, tok, b"WowFTDB = { kaputt").status_code == 422
+    assert alice.get("/api/tokens").json()[0]["lastUsed"] is not None
+
+
 def test_revoked_token(make_client, sv_text):
     alice = make_client("alice")
     tok = upload_token(alice)

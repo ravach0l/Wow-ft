@@ -76,7 +76,10 @@ def user_from_token(request: Request, session: DbSession) -> User:
     tok = session.scalar(select(Token).where(Token.hash == hash_token(value.strip())))
     if tok is None or tok.revoked is not None:
         raise HTTPException(401, "Upload-Token ungültig oder widerrufen")
+    # Sofort speichern: „zuletzt benutzt“ soll auch dann stimmen, wenn der Upload danach
+    # abgelehnt wird (z. B. Datei nicht lesbar). Sonst sähe „nie“ wie „nie angekommen“ aus.
     tok.last_used = now()
+    session.commit()
     user = session.get(User, tok.user_id)
     assert user is not None
     return user
