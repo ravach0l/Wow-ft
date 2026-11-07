@@ -33,16 +33,30 @@ button, input, select { font: inherit; color: inherit; }
   display: flex; align-items: center; gap: 8px; flex-wrap: wrap;
   padding: 14px 0 10px;
 }
-.nav a.me { max-width: 8em; overflow: hidden; text-overflow: ellipsis; }
-@media (max-width: 560px) {
-  .nav { margin-left: -8px; width: calc(100% + 16px); overflow-x: auto; gap: 0; }
-  .nav a { font-size: .9rem; padding: 6px 7px; }
-}
 .brand { font-weight: 700; letter-spacing: .01em; color: var(--text); }
 .brand:hover { text-decoration: none; }
-.nav { display: flex; gap: 4px; margin-left: auto; }
-.nav a { padding: 6px 8px; font-size: .95rem; white-space: nowrap; border-radius: 8px; color: var(--text-2); }
-.nav a.active { background: var(--surface-2); color: var(--text); text-decoration: none; }
+.nav { display: flex; gap: 4px; margin-left: auto; align-items: center; }
+.nav a, .more > button {
+  font: inherit; padding: 6px 8px; font-size: .95rem; white-space: nowrap; border-radius: 8px; color: var(--text-2);
+  background: none; border: 0; cursor: pointer;
+}
+.nav a.active, .more > button.active, .more > button[aria-expanded="true"] { background: var(--surface-2); color: var(--text); text-decoration: none; }
+.nav a.me { display: inline-flex; align-items: center; gap: 6px; }
+.nav a.me .me-name { max-width: 8em; overflow: hidden; text-overflow: ellipsis; }
+.more { position: relative; display: none; }
+.more-menu {
+  position: absolute; right: 0; top: calc(100% + 6px); z-index: 20; min-width: 160px; padding: 6px;
+  display: flex; flex-direction: column; gap: 2px;
+  background: var(--surface); border: 1px solid var(--line); border-radius: 10px; box-shadow: 0 10px 30px rgba(0,0,0,.4);
+}
+.more-menu a { padding: 8px 10px; }
+@media (max-width: 640px) {
+  .nav { margin-left: 0; width: 100%; }
+  .nav .secondary { display: none; }
+  .more { display: block; }
+  .nav a.me { margin-left: auto; }
+  .nav a.me .me-name { display: none; }
+}
 
 .freshness {
   font-size: .85rem; color: var(--text-2);
@@ -221,3 +235,10 @@ ol.steps li { margin-bottom: 6px; }
 .chip b { font-variant-numeric: tabular-nums; font-weight: 600; color: var(--text-2); }
 .chip .done { color: #6fcf73; }
 .chips.soon .chip, .chips.over .chip { opacity: .65; }
+
+/* Wer ist wo */
+.where { margin-top: 16px; }
+.where li { align-items: center; }
+.where .zone { min-width: 9em; color: var(--text-2); }
+.where li.together .zone { color: var(--text); font-weight: 600; }
+.where .chips { margin-top: 0; }

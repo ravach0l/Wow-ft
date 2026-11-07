@@ -1,5 +1,5 @@
-import { createContext, useContext } from "react";
-import { Navigate, NavLink, Route, Routes } from "react-router-dom";
+import { createContext, useContext, useEffect, useRef, useState } from "react";
+import { Navigate, NavLink, Route, Routes, useLocation } from "react-router-dom";
 import { ApiError, loginUrl } from "./api";
 import { storageGet, useApi } from "./hooks";
 import CharacterPage from "./pages/CharacterPage";
@@ -69,16 +69,67 @@ function Home({ me }: { me: Me }) {
 
 function TopBar({ me }: { me: Me }) {
   const gid = currentGroupId(me);
+  const { pathname } = useLocation();
+  const [open, setOpen] = useState(false);
+  const moreRef = useRef<HTMLDivElement>(null);
+
+  // Menü schließen bei Seitenwechsel und bei Klick daneben.
+  useEffect(() => setOpen(false), [pathname]);
+  useEffect(() => {
+    if (!open) return;
+    const close = (e: MouseEvent) => {
+      if (!moreRef.current?.contains(e.target as Node)) setOpen(false);
+    };
+    document.addEventListener("click", close);
+    return () => document.removeEventListener("click", close);
+  }, [open]);
+
+  // Auf dem Handy stehen diese unter „Mehr“, am PC direkt in der Leiste.
+  const secondary = gid
+    ? [
+        ...(me.features.race ? [{ to: `/g/${gid}/rennen`, label: "Rennen" }] : []),
+        { to: `/g/${gid}/material`, label: "Material" },
+        { to: `/g/${gid}/feed`, label: "Feed" },
+      ]
+    : [];
+  const moreActive = secondary.some((l) => pathname.startsWith(l.to));
+
   return (
     <header className="topbar">
       <NavLink to="/" className="brand">Freundes-Tracker</NavLink>
-      <nav className="nav">
+      <nav className="nav" aria-label="Hauptmenü">
         {gid && <NavLink to={`/g/${gid}`} end>Übersicht</NavLink>}
-        {gid && me.features.race && <NavLink to={`/g/${gid}/rennen`}>Rennen</NavLink>}
         {gid && <NavLink to={`/g/${gid}/dungeons`}>Dungeons</NavLink>}
-        {gid && <NavLink to={`/g/${gid}/material`}>Material</NavLink>}
-        {gid && <NavLink to={`/g/${gid}/feed`}>Feed</NavLink>}
-        <NavLink to="/profil" className="me">{me.name}</NavLink>
+        {secondary.map((l) => (
+          <NavLink key={l.to} to={l.to} className="secondary">{l.label}</NavLink>
+        ))}
+        {secondary.length > 0 && (
+          <div className="more" ref={moreRef}>
+            <button
+              type="button"
+              className={moreActive ? "active" : undefined}
+              aria-expanded={open}
+              aria-haspopup="menu"
+              onClick={() => setOpen((v) => !v)}
+            >
+              Mehr ▾
+            </button>
+            {open && (
+              <div className="more-menu" role="menu">
+                {secondary.map((l) => (
+                  <NavLink key={l.to} to={l.to} role="menuitem">{l.label}</NavLink>
+                ))}
+              </div>
+            )}
+          </div>
+        )}
+        <NavLink to="/profil" className="me" aria-label={`Profil von ${me.name}`} title={me.name}>
+          <svg viewBox="0 0 24 24" width="18" height="18" aria-hidden="true">
+            <circle cx="12" cy="8" r="4" fill="currentColor" />
+            <path d="M4 20c0-4 3.6-6.5 8-6.5s8 2.5 8 6.5" fill="currentColor" />
+          </svg>
+          <span className="me-name">{me.name}</span>
+        </NavLink>
       </nav>
     </header>
   );

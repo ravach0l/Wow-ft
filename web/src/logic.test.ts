@@ -2,6 +2,7 @@ import { hiddenLabels, SHARE_CATEGORIES } from "./privacy";
 import { describe, expect, it } from "vitest";
 import { fitFor, planDungeons, suggestions } from "./dungeons";
 import { ago, duration, gold } from "./format";
+import { groupByZone } from "./where";
 import { mergeMaterials } from "./pages/CharacterPage";
 import { talentGrid } from "./talents";
 import { toSeries } from "./pages/RacePage";
@@ -147,5 +148,23 @@ describe("Dungeon-Planer", () => {
     const plans = planDungeons([dm, wc], [pc(1, 1, 25), pc(2, 2, 25), pc(3, 3, 20)]);
     expect(suggestions(plans).map((p) => [p.dungeon.key, p.best])).toEqual([["dm", 3]]);
     expect(suggestions(planDungeons([dm], [pc(1, 1, 20)]))).toEqual([]);
+  });
+});
+
+describe("Wer ist wo", () => {
+  it("gruppiert nach Zone, Zonen mit mehr Personen zuerst, ohne ausgeblendete", () => {
+    const cs = [
+      char({ id: 1, ownerId: 1, name: "A", zone: "Westfall", level: 15 }),
+      char({ id: 2, ownerId: 2, name: "B", zone: "Dämmerwald", level: 22 }),
+      char({ id: 3, ownerId: 3, name: "C", zone: "Dämmerwald", level: 24 }),
+      char({ id: 4, ownerId: 3, name: "D", zone: "Westfall", level: 10 }),
+      char({ id: 5, ownerId: 4, name: "E", zone: null }),
+    ];
+    const z = groupByZone(cs);
+    expect(z.map((g) => [g.zone, g.people, g.chars.map((c) => c.name)])).toEqual([
+      ["Dämmerwald", 2, ["C", "B"]],
+      ["Westfall", 2, ["A", "D"]],
+    ]);
+    expect(groupByZone([char({ zone: null })])).toEqual([]);
   });
 });

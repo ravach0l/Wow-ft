@@ -3,6 +3,7 @@ import { Link, useNavigate, useParams } from "react-router-dom";
 import { useMe } from "../App";
 import CharacterCard from "../components/CharacterCard";
 import Freshness from "../components/Freshness";
+import WhereIsWho from "../components/WhereIsWho";
 import { storageGet, storageSet, useApi } from "../hooks";
 import { groupByOwner, SORT_LABELS, type SortMode } from "../sort";
 import type { Overview } from "../types";
@@ -62,7 +63,7 @@ export default function OverviewPage() {
 
       {people.length === 0 ? (
         <div className="section">
-          <p>Hier ist noch niemand. Unter <Link to="/profil">Profil</Link> findest du den Upload-Token und den Einladungslink.</p>
+          <p>Hier ist noch niemand. Unter <Link to="/profil">Profil</Link> findest du den Einladungslink und wie man den Uploader koppelt.</p>
         </div>
       ) : (
         <div className="grid">
@@ -84,6 +85,8 @@ export default function OverviewPage() {
           ))}
         </div>
       )}
+
+      <WhereIsWho chars={data.characters} />
     </>
   );
 }
