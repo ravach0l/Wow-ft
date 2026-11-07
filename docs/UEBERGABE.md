@@ -1,6 +1,6 @@
 # Übergabe: WoW Forever Freundes-Tracker
 
-Stand: 05.11.2026 · Branch `main`
+Stand: 07.11.2026 · Branch `main`
 
 Dieses Dokument soll reichen, um ohne Vorwissen weiterzuarbeiten, egal ob selbst
 oder mit Claude Code. Details stehen in den verlinkten Dokumenten; hier steht, wie alles
@@ -155,11 +155,11 @@ Auf dem Spielrechner steht nie ein Passwort.
 | Phasen 0–4 aus dem Plan | programmiert und mit automatischen Tests abgedeckt |
 | Phase 5 (Live-Abgleich im Spiel über Battle.net) | offen |
 | Im echten Spiel getestet | **nein** – alles gegen nachgebaute WoW-API |
-| Auf mediavault deployt | **nein** |
+| Auf mediavault deployt | **ja** (07.11.2026, Stand `main` mit Talent-Icons, Migration 0005, Addon 0.4.0; Authentik-Login und Gruppen dort noch nicht durchgespielt) |
 | Docker-Image gebaut | nur in der CI (dort mit Docker), lokal nicht |
 | Authentik-Login gegen echtes Authentik | **nein** (nur Testlogin `WOWFT_DEV_LOGIN`) |
 
-Tests: Addon 20, Server 44, Uploader (Go), Web 7. Details zum Stand pro Schritt:
+Tests: Befehle in Abschnitt 6, aktuelle Läufe in der CI. Details zum Stand pro Schritt:
 [`umsetzungsplan.md`](umsetzungsplan.md).
 
 ---
@@ -188,13 +188,13 @@ Anleitung: [`deployment.md`](deployment.md).
 1. In Authentik Provider + Application `wowft` anlegen, Redirect-URI
    `https://wow.the-birds.xyz/auth/callback`.
 2. `deploy/.env` aus `.env.example` füllen, **`WOWFT_ADMIN_USERS` mit deinem Authentik-Namen**.
-3. `docker compose up -d --build`, Caddy-Block aus `deploy/Caddyfile` übernehmen.
+3. `docker compose up -d --build` (Updates: siehe `deployment.md`, Abschnitt 5), Caddy-Block aus `deploy/Caddyfile` übernehmen.
 4. Login testen, Gruppe anlegen, Token erzeugen.
 5. Backup per cron (`deploy/backup.sh`).
 
 ### C. Erster echter Durchlauf
 
-1. Release taggen (`git tag v0.2.0 && git push origin v0.2.0`) → GitHub baut Uploader
+1. Release taggen (`git tag v0.4.0 && git push origin v0.4.0`) → GitHub baut Uploader
    (Windows, Linux, macOS) und `WowFT-addon.zip`.
 2. Selbst: Uploader `-setup`, spielen, ausloggen → erscheint der Stand auf der Seite?
 3. Unter Linux zusätzlich `wowft-uploader -find` und den systemd-Dienst prüfen

@@ -69,7 +69,8 @@ nach wenigen Sekunden auf der Webseite.
 - Im Spiel: `/ft status` zeigt, ob das Addon Probleme hat.
 - Der Uploader schreibt ein Protokoll nach `%APPDATA%\wowft\uploader.log`
   (in die Adresszeile des Explorers einfügen).
-- Neuen Token erzeugt? Im Spiel eintragen (Schritt 5), `/reload`.
+- Neuen Code fürs Spiel erzeugt? Im Spiel ins Token-Feld eintragen (siehe „Klappt das Koppeln im
+  Browser nicht?“), dann `/reload`.
 - Sonst melde dich bei Dominic und schick ihm die Log-Datei.
 
 ### Addon von Hand installieren

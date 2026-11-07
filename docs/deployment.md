@@ -61,6 +61,14 @@ Per cron täglich aufrufen.
 git pull && cd deploy && docker compose up -d --build
 ```
 
+Auf mediavault liegt `~/wow-ft` ohne `.git` (per Kopie angelegt), `git pull` geht dort nicht.
+Von der Entwicklungsmaschine aus die getrackten Dateien übertragen (`.env`, `data/`, Backups und
+das Override bleiben unberührt):
+
+```sh
+git archive HEAD | ssh mediavault 'cd ~/wow-ft && tar -x && cd deploy && docker compose up -d --build'
+```
+
 ## 6. Uploader und Addon verteilen
 
 Ein Git-Tag `v0.1.0` startet `.github/workflows/release.yml` und hängt an das Release:
