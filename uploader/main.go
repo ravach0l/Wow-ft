@@ -13,6 +13,7 @@ import (
 	"os/signal"
 	"path/filepath"
 	"runtime"
+	"runtime/debug"
 	"strings"
 	"syscall"
 )
@@ -91,6 +92,16 @@ func run() int {
 	baseDir := filepath.Dir(*configPath)
 	_ = os.MkdirAll(baseDir, 0o700)
 	logger := newLogger(filepath.Join(baseDir, "uploader.log"), !*background)
+	// Erste Zeile immer ins Log: So zeigt eine Log-Datei auch dann etwas, wenn der
+	// Uploader in der Einrichtung hängen bleibt oder abstürzt.
+	logger.Printf("Start: wowft-uploader %s (%s/%s) %s", Version, runtime.GOOS, runtime.GOARCH, strings.Join(os.Args[1:], " "))
+	defer func() {
+		if r := recover(); r != nil {
+			logger.Printf("Absturz: %v\n%s", r, debug.Stack())
+			pause()
+			os.Exit(2)
+		}
+	}()
 
 	if *autostart != "" {
 		on := *autostart == "on"
@@ -109,7 +120,8 @@ func run() int {
 	cfg, err := LoadConfig(*configPath)
 	if *setup || errors.Is(err, fs.ErrNotExist) {
 		var started bool
-		cfg, started, err = interactiveSetup(*configPath, cfg)
+		logger.Printf("Einrichtung gestartet (Konfiguration: %s)", *configPath)
+		cfg, started, err = interactiveSetup(*configPath, cfg, logger.Writer())
 		if err != nil {
 			logger.Printf("Einrichtung abgebrochen: %v", err)
 			pause()
@@ -201,32 +213,35 @@ func run() int {
 	return 0
 }
 
-func interactiveSetup(path string, old *Config) (*Config, bool, error) {
-	cfg, err := RunSetup(os.Stdin, os.Stdout, old)
+// interactiveSetup fragt alles ab; die Ausgaben gehen auch ins Log (out schreibt auf
+// Konsole und Log-Datei), damit sich Probleme bei der Einrichtung später nachvollziehen lassen.
+func interactiveSetup(path string, old *Config, out io.Writer) (*Config, bool, error) {
+	cfg, err := RunSetup(os.Stdin, out, old)
 	if err != nil {
 		return nil, false, err
 	}
 	if err := SaveConfig(path, cfg); err != nil {
 		return nil, false, err
 	}
-	fmt.Printf("Gespeichert in %s\n", path)
+	fmt.Fprintf(out, "Gespeichert in %s\n", path)
 	if runtime.GOOS != "windows" && runtime.GOOS != "linux" {
 		return cfg, false, nil
 	}
-	fmt.Print("Beim Anmelden automatisch im Hintergrund starten? [J/n]: ")
+	fmt.Fprint(out, "Beim Anmelden automatisch im Hintergrund starten? [J/n]: ")
 	line, _ := bufio.NewReader(os.Stdin).ReadString('\n')
 	if a := strings.ToLower(strings.TrimSpace(line)); a != "" && a != "j" && a != "y" {
+		fmt.Fprintln(out, "Kein Autostart.")
 		return cfg, false, nil
 	}
 	started, err := SetAutostart(true, path)
 	switch {
 	case err != nil:
-		fmt.Println("Autostart fehlgeschlagen:", err)
+		fmt.Fprintln(out, "Autostart fehlgeschlagen:", err)
 	case started:
-		fmt.Println("Autostart eingerichtet. Der Uploader läuft jetzt als Dienst im Hintergrund.")
-		fmt.Println("Status: systemctl --user status wowft-uploader · Log: journalctl --user -u wowft-uploader -f")
+		fmt.Fprintln(out, "Autostart eingerichtet. Der Uploader läuft jetzt als Dienst im Hintergrund.")
+		fmt.Fprintln(out, "Status: systemctl --user status wowft-uploader · Log: journalctl --user -u wowft-uploader -f")
 	default:
-		fmt.Println("Autostart eingerichtet (ab der nächsten Anmeldung).")
+		fmt.Fprintln(out, "Autostart eingerichtet (ab der nächsten Anmeldung).")
 	}
 	return cfg, started, nil
 }
