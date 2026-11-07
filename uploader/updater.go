@@ -19,14 +19,14 @@ import (
 )
 
 // Der Uploader aktualisiert sich selbst aus den GitHub-Releases:
-//  1. neueste Version abfragen (einmal beim Start, dann täglich),
+//  1. neueste Version abfragen (beim Start, dann stündlich),
 //  2. passende Datei und SHA256SUMS.txt laden, Prüfsumme vergleichen,
 //  3. die laufende Datei austauschen und neu starten.
 // Selbst gebaute Versionen ("dev") aktualisieren sich nie.
 
 const (
 	updateRepo      = "ravach0l/Wow-ft"
-	updateEvery     = 24 * time.Hour
+	updateEvery     = time.Hour // GitHub erlaubt ohne Anmeldung 60 Abfragen pro Stunde und IP
 	maxUpdateBytes  = 64 << 20
 	checksumsName   = "SHA256SUMS.txt"
 	restartExitCode = 75 // systemd startet den Dienst damit neu (Restart=on-failure)
@@ -228,7 +228,7 @@ func restartProcess(exe string) {
 	os.Exit(restartExitCode)
 }
 
-// RunUpdates prüft beim Start und danach täglich; nach einem Austausch folgt der Neustart.
+// RunUpdates prüft beim Start und danach stündlich; nach einem Austausch folgt der Neustart.
 func (u *Updater) RunUpdates(stop <-chan struct{}) {
 	for {
 		res, err := u.Check()

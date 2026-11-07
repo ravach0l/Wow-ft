@@ -50,7 +50,7 @@ nach wenigen Sekunden auf der Webseite.
 
 ## Gut zu wissen
 
-- **Updates kommen von selbst:** Der Uploader prüft täglich, ob es eine neue Version gibt, und
+- **Updates kommen von selbst:** Der Uploader prüft stündlich, ob es eine neue Version gibt, und
   aktualisiert sich und das Addon selbst. Neue Addon-Versionen wirken nach `/reload`.
 
 - **Nichts geht live:** WoW speichert die Daten nur bei Logout oder `/reload`. Die Webseite

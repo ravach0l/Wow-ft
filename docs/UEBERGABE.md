@@ -69,7 +69,7 @@ Charaktere werden über die **GUID** identifiziert, weil Forever keine Realms ha
 | `addonsettings.go` | Liest Server und Token aus `WowFTDB.upload` (Vorrang vor `config.json`) und leert den Token vor dem Upload |
 | `setup.go` | Einrichtungsdialog (Server, Kopplung, WoW-Ordner) |
 | `addoninstall.go` | Bettet das Addon ein (`go generate` kopiert `addon/WowFT` nach `addonfiles/`), installiert es in den Forever-Spielordner und aktualisiert ältere Versionen (Vergleich über `## Version` in der `.toc`; neuere bleiben). Beim Start und stündlich; abschaltbar mit `"addonInstall": false` in `config.json` |
-| `updater.go` | Selbstaktualisierung: prüft beim Start und täglich das neueste GitHub-Release, lädt die passende Datei, vergleicht sie mit `SHA256SUMS.txt`, tauscht die laufende Datei aus und startet neu (unter systemd per Exit-Code 75). `-update` prüft sofort; `"autoUpdate": false` in `config.json` schaltet es ab; selbst gebaute Versionen (`dev`) aktualisieren sich nie |
+| `updater.go` | Selbstaktualisierung: prüft beim Start und stündlich das neueste GitHub-Release, lädt die passende Datei, vergleicht sie mit `SHA256SUMS.txt`, tauscht die laufende Datei aus und startet neu (unter systemd per Exit-Code 75). `-update` prüft sofort; `"autoUpdate": false` in `config.json` schaltet es ab; selbst gebaute Versionen (`dev`) aktualisieren sich nie |
 | `pair.go` | Kopplung: Gerätecode anzeigen, Browser öffnen, Token abholen; Code fürs Spiel (`WFT-XXXX-XXXX`) aus `WowFTDB.upload` einlösen |
 | `discover.go` | Findet `WowFT.lua` unter dem WoW-Ordner (Groß-/Kleinschreibung egal); bekannte Installationsorte inkl. Lutris, Bottles, Steam/Proton, Heroic |
 | `search.go` | Fallback: durchsucht Laufwerke bzw. Home nach `Wow*.exe` oder `WTF`+`Interface` (Exe-Name von Forever ist unbekannt) |
@@ -247,8 +247,8 @@ cd web && npm test && npm run build
 - **Datenvertrag zuerst:** Neue Werte zuerst in `docs/datenvertrag.md` und `fixtures/WowFT.lua`,
   dann Addon → Server (`ingest.py`, Pydantic-Modell) → Web. `fixtures/ingest.json` wird aus der
   Lua-Datei erzeugt (`python -m wowft.svparse ../fixtures/WowFT.lua`).
-- **Releases sind Updates:** Jedes Tag `vX.Y.Z` wird von allen Uploadern (ab v0.4.0) innerhalb eines
-  Tages automatisch installiert, samt dem darin enthaltenen Addon. Nur von `main` taggen, nachdem
+- **Releases sind Updates:** Jedes Tag `vX.Y.Z` wird von allen Uploadern (ab v0.4.0) innerhalb einer
+  Stunde automatisch installiert, samt dem darin enthaltenen Addon. Nur von `main` taggen, nachdem
   die CI grün ist.
 - **Addon-Version hochzählen** (`## Version` in `WowFT.toc` und `ns.VERSION` in `Util.lua`), wenn sich
   das Addon ändert. Nur dann ersetzt der Uploader die installierte Version bei den Freunden.
