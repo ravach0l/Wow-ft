@@ -23,14 +23,12 @@ Melde dich auf <https://wow.the-birds.xyz> an, öffne dann den Gruppen-Link und 
 2. Starte sie per Doppelklick. Windows warnt eventuell („Der Computer wurde durch Windows
    geschützt“): Klicke auf **Weitere Informationen → Trotzdem ausführen**. Die Datei ist
    nicht signiert, das ist normal.
-3. Beantworte die Fragen:
-   - **Server:** Enter drücken.
-   - **Koppeln:** Enter drücken. Der Uploader zeigt einen kurzen Code (z. B. `K7Q-4MX`) und öffnet
-     die Webseite. Prüfe, dass dort derselbe Code steht, und klicke auf **Koppeln**.
-     Einen Token musst du nicht kopieren.
-   - **WoW-Ordner:** den gefundenen Ordner bestätigen. Der Uploader installiert jetzt das
-     Addon **WowFT** selbst und hält es später aktuell.
-   - **Autostart:** `J`, damit der Uploader beim Anmelden von selbst startet.
+3. Der Uploader sucht deinen WoW-Ordner und installiert das Addon **WowFT** selbst. Nur wenn
+   er mehrere WoW-Installationen findet, fragt er, welche er nehmen soll.
+4. Zum Schluss zeigt er einen kurzen Code (z. B. `K7Q-4MX`) und öffnet die Webseite. Prüfe, dass
+   dort derselbe Code steht, und klicke auf **Koppeln**. Einen Token musst du nicht kopieren.
+5. Fertig: Der Uploader läuft ab jetzt im Hintergrund und startet bei jeder Anmeldung von selbst.
+   Das schwarze Fenster schließt sich nach ein paar Sekunden.
 
 ### Klappt das Koppeln im Browser nicht?
 

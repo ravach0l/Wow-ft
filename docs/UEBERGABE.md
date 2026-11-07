@@ -67,7 +67,7 @@ Charaktere werden über die **GUID** identifiziert, weil Forever keine Realms ha
 |---|---|
 | `main.go` | Flags: `-setup`, `-once`, `-find`, `-autostart on\|off`, `-background`, `-config` |
 | `addonsettings.go` | Liest Server und Token aus `WowFTDB.upload` (Vorrang vor `config.json`) und leert den Token vor dem Upload |
-| `setup.go` | Einrichtungsdialog (Server, Kopplung, WoW-Ordner) |
+| `setup.go` | Einrichtung: WoW-Ordner (nur bei mehreren Kandidaten eine Frage), Addon, Koppeln zuletzt; danach keine Eingabe mehr (der Browser liegt dann im Vordergrund). Autostart ohne Frage; unter Windows startet danach ein Hintergrundprozess und das Fenster schließt sich. Server per `-server` |
 | `addoninstall.go` | Bettet das Addon ein (`go generate` kopiert `addon/WowFT` nach `addonfiles/`), installiert es in den Forever-Spielordner und aktualisiert ältere Versionen (Vergleich über `## Version` in der `.toc`; neuere bleiben). Beim Start und stündlich; abschaltbar mit `"addonInstall": false` in `config.json` |
 | `updater.go` | Selbstaktualisierung: prüft beim Start und stündlich das neueste GitHub-Release, lädt die passende Datei, vergleicht sie mit `SHA256SUMS.txt`, tauscht die laufende Datei aus und startet neu (unter systemd per Exit-Code 75). `-update` prüft sofort; `"autoUpdate": false` in `config.json` schaltet es ab; selbst gebaute Versionen (`dev`) aktualisieren sich nie |
 | `pair.go` | Kopplung: Gerätecode anzeigen, Browser öffnen, Token abholen; Code fürs Spiel (`WFT-XXXX-XXXX`) aus `WowFTDB.upload` einlösen |

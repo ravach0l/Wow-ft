@@ -32,6 +32,7 @@ func run() int {
 		version    = flag.Bool("version", false, "Version anzeigen")
 		find       = flag.Bool("find", false, "WoW-Installationen suchen und anzeigen")
 		update     = flag.Bool("update", false, "jetzt nach einer neuen Uploader-Version suchen und sie installieren")
+		server     = flag.String("server", "", "Server-Adresse für die Einrichtung (Standard: "+DefaultServer+")")
 	)
 	flag.Parse()
 
@@ -121,6 +122,12 @@ func run() int {
 	if *setup || errors.Is(err, fs.ErrNotExist) {
 		var started bool
 		logger.Printf("Einrichtung gestartet (Konfiguration: %s)", *configPath)
+		if *server != "" {
+			if cfg == nil {
+				cfg = &Config{}
+			}
+			cfg.Server = *server
+		}
 		cfg, started, err = interactiveSetup(*configPath, cfg, logger.Writer())
 		if err != nil {
 			logger.Printf("Einrichtung abgebrochen: %v", err)
@@ -213,8 +220,10 @@ func run() int {
 	return 0
 }
 
-// interactiveSetup fragt alles ab; die Ausgaben gehen auch ins Log (out schreibt auf
-// Konsole und Log-Datei), damit sich Probleme bei der Einrichtung später nachvollziehen lassen.
+// interactiveSetup richtet ein und schaltet den Autostart ein, ohne zu fragen (abschaltbar mit
+// -autostart off). Die Ausgaben gehen auch ins Log. started = true heißt: Der Uploader läuft
+// jetzt schon im Hintergrund weiter (systemd bzw. eigener Prozess unter Windows), dieses
+// Fenster darf zugehen.
 func interactiveSetup(path string, old *Config, out io.Writer) (*Config, bool, error) {
 	cfg, err := RunSetup(os.Stdin, out, old)
 	if err != nil {
@@ -227,21 +236,26 @@ func interactiveSetup(path string, old *Config, out io.Writer) (*Config, bool, e
 	if runtime.GOOS != "windows" && runtime.GOOS != "linux" {
 		return cfg, false, nil
 	}
-	fmt.Fprint(out, "Beim Anmelden automatisch im Hintergrund starten? [J/n]: ")
-	line, _ := bufio.NewReader(os.Stdin).ReadString('\n')
-	if a := strings.ToLower(strings.TrimSpace(line)); a != "" && a != "j" && a != "y" {
-		fmt.Fprintln(out, "Kein Autostart.")
+	started, err := SetAutostart(true, path)
+	if err != nil {
+		fmt.Fprintln(out, "Autostart fehlgeschlagen:", err)
 		return cfg, false, nil
 	}
-	started, err := SetAutostart(true, path)
-	switch {
-	case err != nil:
-		fmt.Fprintln(out, "Autostart fehlgeschlagen:", err)
-	case started:
-		fmt.Fprintln(out, "Autostart eingerichtet. Der Uploader läuft jetzt als Dienst im Hintergrund.")
-		fmt.Fprintln(out, "Status: systemctl --user status wowft-uploader · Log: journalctl --user -u wowft-uploader -f")
-	default:
-		fmt.Fprintln(out, "Autostart eingerichtet (ab der nächsten Anmeldung).")
+	fmt.Fprintln(out, "Autostart eingerichtet: Der Uploader startet bei jeder Anmeldung. (Abschalten: wowft-uploader -autostart off)")
+	if !started && runtime.GOOS == "windows" {
+		if err := startBackground(path); err != nil {
+			fmt.Fprintln(out, "Hintergrundstart fehlgeschlagen, der Uploader läuft in diesem Fenster weiter:", err)
+			return cfg, false, nil
+		}
+		started = true
+	}
+	if started {
+		fmt.Fprintln(out)
+		fmt.Fprintln(out, "Fertig! Der Uploader läuft jetzt im Hintergrund. Dieses Fenster schließt sich gleich.")
+		if runtime.GOOS == "linux" {
+			fmt.Fprintln(out, "Status: systemctl --user status wowft-uploader · Log: journalctl --user -u wowft-uploader -f")
+		}
+		closeDelay()
 	}
 	return cfg, started, nil
 }

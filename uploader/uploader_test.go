@@ -216,10 +216,14 @@ func TestWatcherBackoffAndPermanentErrors(t *testing.T) {
 }
 
 func TestRunSetup(t *testing.T) {
-	searchWowDirs = func() []string { return nil }
-	paired := 0
+	var guesses []string
+	searchWowDirs = func() []string { return guesses }
+	paired, pairErr := 0, error(nil)
 	pairDevice = func(server string, out io.Writer) (string, error) {
 		paired++
+		if pairErr != nil {
+			return "", pairErr
+		}
 		return "wft_gekoppelt", nil
 	}
 	redeemCode = func(server, code string) (string, error) { return "wft_auscode", nil }
@@ -234,31 +238,54 @@ func TestRunSetup(t *testing.T) {
 	wow := t.TempDir()
 	var out bytes.Buffer
 
-	// Standard: Enter, Enter -> koppeln.
-	c, err := RunSetup(strings.NewReader("\n\n"+wow+"\n"), &out, nil)
+	// Ein einziger gefundener Ordner: keine Frage. Koppeln kommt zuletzt, danach keine Eingabe mehr.
+	guesses = []string{wow}
+	c, err := RunSetup(strings.NewReader(""), &out, nil)
 	if err != nil {
 		t.Fatal(err)
 	}
 	if c.Server != DefaultServer || c.Token != "wft_gekoppelt" || c.WowDir != wow || paired != 1 {
 		t.Fatalf("%+v paired=%d", c, paired)
 	}
-	// Schon gekoppelt: Enter behält den Token, keine neue Kopplung.
-	c2, err := RunSetup(strings.NewReader("\n\n\n"), &out, c)
-	if err != nil || c2.Token != "wft_gekoppelt" || paired != 1 {
+	if strings.Contains(out.String(), "Server [") {
+		t.Fatal("nach dem Server wird nicht mehr gefragt")
+	}
+	// Mehrere Ordner: Auswahl per Nummer.
+	other := t.TempDir()
+	guesses = []string{other, wow}
+	c, err = RunSetup(strings.NewReader("2\n"), &out, nil)
+	if err != nil || c.WowDir != wow {
+		t.Fatalf("%+v %v", c, err)
+	}
+	// Nichts gefunden: Pfad eingeben.
+	guesses = nil
+	c, err = RunSetup(strings.NewReader(wow+"\n"), &out, nil)
+	if err != nil || c.WowDir != wow {
+		t.Fatalf("%+v %v", c, err)
+	}
+	// Schon eingerichtet: Enter behält Ordner und Token, keine neue Kopplung.
+	n := paired
+	c2, err := RunSetup(strings.NewReader("\n\n"), &out, c)
+	if err != nil || c2.Token != "wft_gekoppelt" || c2.WowDir != wow || paired != n {
 		t.Fatalf("%+v %v paired=%d", c2, err, paired)
 	}
-	// Schon gekoppelt, aber neu koppeln.
-	if c3, _ := RunSetup(strings.NewReader("\nj\n\n"), &out, c); paired != 2 || c3.Token != "wft_gekoppelt" {
-		t.Fatalf("neu koppeln: paired=%d", paired)
+	// Schon eingerichtet, aber neu koppeln.
+	if _, err := RunSetup(strings.NewReader("\nj\n"), &out, c); err != nil || paired != n+1 {
+		t.Fatalf("neu koppeln: %v paired=%d", err, paired)
 	}
-	// Nicht koppeln, Token von Hand.
-	c4, err := RunSetup(strings.NewReader("\nn\nwft_hand\n"+wow+"\n"), &out, nil)
-	if err != nil || c4.Token != "wft_hand" {
+	// Koppeln klappt nicht: Token von Hand, Code fürs Spiel oder später.
+	pairErr = errors.New("Server nicht erreichbar")
+	guesses = []string{wow}
+	c3, err := RunSetup(strings.NewReader("wft_hand\n"), &out, nil)
+	if err != nil || c3.Token != "wft_hand" {
+		t.Fatalf("%+v %v", c3, err)
+	}
+	c4, err := RunSetup(strings.NewReader("wft-abcd-efgh\n"), &out, nil)
+	if err != nil || c4.Token != "wft_auscode" {
 		t.Fatalf("%+v %v", c4, err)
 	}
-	// Nicht koppeln, Code fürs Spiel von Hand: wird sofort eingelöst.
-	c5, err := RunSetup(strings.NewReader("\nn\nwft-abcd-efgh\n"+wow+"\n"), &out, nil)
-	if err != nil || c5.Token != "wft_auscode" {
-		t.Fatalf("%+v %v", c5, err)
+	c5, err := RunSetup(strings.NewReader("\n"), &out, nil)
+	if err != nil || c5.Token != "" {
+		t.Fatalf("später koppeln: %+v %v", c5, err)
 	}
 }

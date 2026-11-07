@@ -20,7 +20,10 @@ var redeemCode = func(server, code string) (string, error) {
 	return tok, err
 }
 
-// RunSetup fragt Server, Kopplung und WoW-Ordner ab. Vorhandene Werte sind Vorgaben.
+// RunSetup richtet den Uploader ein. Reihenfolge mit Absicht: erst der WoW-Ordner (nur bei
+// mehreren Kandidaten eine Frage), dann das Addon, zum Schluss das Koppeln. Beim Koppeln
+// öffnet sich der Browser und rückt in den Vordergrund; danach darf keine Frage mehr im
+// Konsolenfenster warten, die niemand sieht.
 func RunSetup(in io.Reader, out io.Writer, old *Config) (*Config, error) {
 	r := bufio.NewReader(in)
 	ask := func(prompt, def string) (string, error) {
@@ -44,91 +47,108 @@ func RunSetup(in io.Reader, out io.Writer, old *Config) (*Config, error) {
 	if old != nil {
 		*c = *old
 	}
-	fmt.Fprintln(out, "WowFT-Uploader einrichten")
-	fmt.Fprintln(out)
-
-	var err error
-	if c.Server, err = ask("Server", c.Server); err != nil {
-		return nil, err
-	}
 	c.normalize()
 	if !validServer(c.Server) {
 		return nil, errors.New("Server-Adresse muss mit https:// beginnen")
 	}
+	fmt.Fprintln(out, "WowFT-Uploader einrichten")
+	fmt.Fprintf(out, "Server: %s\n\n", c.Server)
 
-	// Koppeln: Der Uploader holt sich den Token selbst, man bestätigt nur im Browser.
-	question := "Uploader jetzt mit deinem Konto koppeln? [J/n]"
-	if c.Token != "" {
-		question = fmt.Sprintf("Schon gekoppelt (%s…). Neu koppeln? [j/N]", c.Token[:min(10, len(c.Token))])
-	}
-	answer, err := ask(question, "")
+	// 1. WoW-Ordner
+	dir, err := chooseWowDir(ask, out, c.WowDir)
 	if err != nil {
 		return nil, err
 	}
-	answer = strings.ToLower(answer)
-	wantPair := answer == "j" || answer == "y" || (c.Token == "" && answer == "")
-	switch {
-	case wantPair:
-		tok, err := pairDevice(c.Server, out)
-		if err != nil {
-			return nil, err
-		}
-		c.Token = tok
-	case c.Token == "" && (answer == "n" || answer == "nein"):
-		fmt.Fprintln(out, "Dann den Token hier einfügen, oder leer lassen und später auf der Webseite")
-		fmt.Fprintln(out, "unter Profil einen Code fürs Spiel erzeugen und ihn im Spiel eintragen.")
-		tok, err := ask("Upload-Token oder Code fürs Spiel", "")
-		if err != nil {
-			return nil, err
-		}
-		if IsGameCode(tok) {
-			if tok, err = redeemCode(c.Server, tok); err != nil {
-				return nil, fmt.Errorf("Code nicht eingelöst: %w", err)
-			}
-		}
-		c.Token = tok
+	c.WowDir = dir
+	if c.WowDir == "" {
+		return nil, errors.New("kein WoW-Ordner angegeben")
 	}
 
+	// 2. Addon
+	if c.AutoAddon() {
+		EnsureAddon(c.WowDir, func(format string, args ...any) { fmt.Fprintf(out, format+"\n", args...) })
+	}
+	files := FindSavedVariables(c.WowDir)
+	for _, f := range files {
+		fmt.Fprintf(out, "Gefunden: %s\n", f)
+	}
+
+	// 3. Koppeln – zuletzt, danach keine Fragen mehr.
+	if c.Token != "" {
+		answer, err := ask(fmt.Sprintf("Schon gekoppelt (%s…). Neu koppeln? [j/N]", c.Token[:min(10, len(c.Token))]), "")
+		if err != nil {
+			return nil, err
+		}
+		if a := strings.ToLower(answer); a == "j" || a == "y" {
+			if c.Token, err = pairOrManual(ask, out, c.Server); err != nil {
+				return nil, err
+			}
+		}
+	} else if c.Token, err = pairOrManual(ask, out, c.Server); err != nil {
+		return nil, err
+	}
+
+	c.normalize()
+	if err := c.Validate(); err != nil {
+		return nil, err
+	}
+	if len(files) == 0 {
+		fmt.Fprintf(out, "Noch keine %s: Im Spiel einloggen; danach schickt der Uploader den Stand bei jedem Logout oder /reload.\n", svName)
+	}
+	return c, nil
+}
+
+// chooseWowDir fragt nur, wenn es nicht eindeutig ist: ein gefundener Ordner wird ohne Frage
+// übernommen, mehrere werden zur Auswahl gestellt, keiner heißt: Pfad eingeben.
+func chooseWowDir(ask func(string, string) (string, error), out io.Writer, current string) (string, error) {
+	if current != "" {
+		return ask("WoW-Ordner", current)
+	}
 	guesses := knownWowDirs()
 	if len(guesses) == 0 {
 		fmt.Fprintln(out, "Suche die WoW-Installation auf diesem Rechner (bis zu 20 Sekunden) …")
 		guesses = sortByFound(searchWowDirs())
 	}
-	if len(guesses) == 0 {
+	switch len(guesses) {
+	case 0:
 		fmt.Fprintln(out, "Nichts gefunden. Bitte den Ordner angeben, in dem die WoW-Programmdatei liegt.")
+		return ask("WoW-Ordner", "")
+	case 1:
+		fmt.Fprintf(out, "WoW-Ordner: %s\n", guesses[0])
+		return guesses[0], nil
 	}
-	def := c.WowDir
-	if def == "" && len(guesses) > 0 {
-		def = guesses[0]
+	fmt.Fprintln(out, "Gefundene WoW-Ordner:")
+	for i, g := range guesses {
+		fmt.Fprintf(out, "  %d) %s\n", i+1, g)
 	}
-	if len(guesses) > 1 {
-		fmt.Fprintln(out, "Gefundene WoW-Ordner:")
-		for i, g := range guesses {
-			fmt.Fprintf(out, "  %d) %s\n", i+1, g)
-		}
-	}
-	dir, err := ask("WoW-Ordner (oder Nummer)", def)
+	dir, err := ask("Welcher? Nummer oder Pfad", "1")
 	if err != nil {
-		return nil, err
+		return "", err
 	}
 	if n, convErr := strconv.Atoi(dir); convErr == nil && n >= 1 && n <= len(guesses) {
-		dir = guesses[n-1]
+		return guesses[n-1], nil
 	}
-	c.WowDir = dir
-	c.normalize()
-	if err := c.Validate(); err != nil {
-		return nil, err
+	return dir, nil
+}
+
+// pairOrManual koppelt über den Browser. Klappt das nicht (Server nicht erreichbar,
+// abgelaufen), kann man einen Token oder Code fürs Spiel einfügen oder es später machen.
+func pairOrManual(ask func(string, string) (string, error), out io.Writer, server string) (string, error) {
+	tok, err := pairDevice(server, out)
+	if err == nil {
+		return tok, nil
 	}
-	if c.AutoAddon() {
-		EnsureAddon(c.WowDir, func(format string, args ...any) { fmt.Fprintf(out, format+"\n", args...) })
+	fmt.Fprintf(out, "Koppeln hat nicht geklappt: %v\n", err)
+	fmt.Fprintln(out, "Du kannst einen Token oder einen Code fürs Spiel (Webseite → Profil) einfügen,")
+	fmt.Fprintln(out, "oder leer lassen und den Code später im Spiel eintragen.")
+	tok, err = ask("Token oder Code", "")
+	if err != nil || tok == "" {
+		return "", nil
 	}
-	files := FindSavedVariables(c.WowDir)
-	if len(files) == 0 {
-		fmt.Fprintf(out, "Noch keine %s: Im Spiel einloggen, danach schickt der Uploader den Stand bei jedem Logout oder /reload.\n", svName)
-	} else {
-		for _, f := range files {
-			fmt.Fprintf(out, "Gefunden: %s\n", f)
+	if IsGameCode(tok) {
+		if tok, err = redeemCode(server, tok); err != nil {
+			return "", fmt.Errorf("Code nicht eingelöst: %w", err)
 		}
 	}
-	return c, nil
+	return tok, nil
 }
