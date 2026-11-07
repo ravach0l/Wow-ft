@@ -157,7 +157,7 @@ Auf dem Spielrechner steht nie ein Passwort.
 | Phasen 0–4 aus dem Plan | programmiert und mit automatischen Tests abgedeckt |
 | Phase 5 (Live-Abgleich im Spiel über Battle.net) | offen |
 | Im echten Spiel getestet | **nein** – alles gegen nachgebaute WoW-API |
-| Auf mediavault deployt | **ja** (07.11.2026, Stand `main` mit Talent-Icons, Migration 0005, Addon 0.4.0; Authentik-Login und Gruppen dort noch nicht durchgespielt) |
+| Auf mediavault deployt | **ja** (07.11.2026, Release v0.5.0, Migration 0006; Authentik-Login und Gruppen dort noch nicht durchgespielt) |
 | Docker-Image gebaut | nur in der CI (dort mit Docker), lokal nicht |
 | Authentik-Login gegen echtes Authentik | **nein** (nur Testlogin `WOWFT_DEV_LOGIN`) |
 
@@ -196,7 +196,7 @@ Anleitung: [`deployment.md`](deployment.md).
 
 ### C. Erster echter Durchlauf
 
-1. Release taggen (`git tag v0.4.0 && git push origin v0.4.0`) → GitHub baut Uploader
+1. Release taggen (`git tag v0.6.0 && git push origin v0.6.0`) → GitHub baut Uploader
    (Windows, Linux, macOS) und `WowFT-addon.zip`.
 2. Selbst: Uploader `-setup`, spielen, ausloggen → erscheint der Stand auf der Seite?
 3. Unter Linux zusätzlich `wowft-uploader -find` und den systemd-Dienst prüfen
@@ -248,7 +248,7 @@ cd web && npm test && npm run build
 - **Datenvertrag zuerst:** Neue Werte zuerst in `docs/datenvertrag.md` und `fixtures/WowFT.lua`,
   dann Addon → Server (`ingest.py`, Pydantic-Modell) → Web. `fixtures/ingest.json` wird aus der
   Lua-Datei erzeugt (`python -m wowft.svparse ../fixtures/WowFT.lua`).
-- **Releases sind Updates:** Jedes Tag `vX.Y.Z` wird von allen Uploadern (ab v0.4.0) innerhalb einer
+- **Releases sind Updates:** Jedes Tag `vX.Y.Z` wird von allen Uploadern (ab v0.5.0) innerhalb einer
   Stunde automatisch installiert, samt dem darin enthaltenen Addon. Nur von `main` taggen, nachdem
   die CI grün ist.
 - **Addon-Version hochzählen** (`## Version` in `WowFT.toc` und `ns.VERSION` in `Util.lua`), wenn sich
