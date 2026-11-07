@@ -207,3 +207,17 @@ ol.steps li { margin-bottom: 6px; }
   border: 1px dashed var(--accent); border-radius: 10px; background: var(--bg); color: var(--text);
 }
 .warn, .section p.warn { color: var(--warn); font-size: .9rem; }
+
+/* Dungeon-Planer */
+.dungeon { scroll-margin-top: 16px; }
+.dungeon-faction { margin-top: 10px; }
+.chips { display: flex; flex-wrap: wrap; gap: 6px; align-items: center; margin-top: 6px; }
+.chip-label { font-size: .8rem; color: var(--text-3); margin-right: 2px; }
+.chip {
+  display: inline-flex; gap: 4px; align-items: baseline; padding: 3px 9px; border-radius: 999px;
+  background: var(--surface-2); border: 1px solid var(--line); font-size: .85rem; color: var(--text);
+}
+.chip:hover { text-decoration: none; border-color: var(--text-3); }
+.chip b { font-variant-numeric: tabular-nums; font-weight: 600; color: var(--text-2); }
+.chip .done { color: #6fcf73; }
+.chips.soon .chip, .chips.over .chip { opacity: .65; }

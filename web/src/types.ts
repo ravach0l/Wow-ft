@@ -169,3 +169,29 @@ export interface OwnCharacter {
   share: Record<string, boolean>;
   lastUpload: number | null;
 }
+
+export interface Dungeon {
+  key: string;
+  name: string;
+  zone: string;
+  min: number;
+  max: number;
+  raid: boolean;
+  size: number;
+}
+
+export interface PlannerCharacter {
+  id: number;
+  name: string;
+  class: string | null;
+  faction: string | null;
+  ownerId: number;
+  ownerName: string;
+  level: number;
+  cleared: string[];
+}
+
+export interface PlannerData {
+  dungeons: Dungeon[];
+  characters: PlannerCharacter[];
+}

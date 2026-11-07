@@ -3,6 +3,7 @@ import { Navigate, NavLink, Route, Routes } from "react-router-dom";
 import { ApiError, loginUrl } from "./api";
 import { storageGet, useApi } from "./hooks";
 import CharacterPage from "./pages/CharacterPage";
+import DungeonsPage from "./pages/DungeonsPage";
 import FeedPage from "./pages/FeedPage";
 import InvitePage from "./pages/InvitePage";
 import MaterialsPage from "./pages/MaterialsPage";
@@ -42,6 +43,7 @@ export default function App() {
           <Route path="/g/:groupId/feed" element={<FeedPage />} />
           {me.features.race && <Route path="/g/:groupId/rennen" element={<RacePage />} />}
           <Route path="/g/:groupId/material" element={<MaterialsPage />} />
+          <Route path="/g/:groupId/dungeons" element={<DungeonsPage />} />
           <Route path="/c/:charId" element={<CharacterPage />} />
           <Route path="/profil" element={<ProfilePage />} />
           <Route path="/invite/:code" element={<InvitePage />} />
@@ -73,6 +75,7 @@ function TopBar({ me }: { me: Me }) {
       <nav className="nav">
         {gid && <NavLink to={`/g/${gid}`} end>Übersicht</NavLink>}
         {gid && me.features.race && <NavLink to={`/g/${gid}/rennen`}>Rennen</NavLink>}
+        {gid && <NavLink to={`/g/${gid}/dungeons`}>Dungeons</NavLink>}
         {gid && <NavLink to={`/g/${gid}/material`}>Material</NavLink>}
         {gid && <NavLink to={`/g/${gid}/feed`}>Feed</NavLink>}
         <NavLink to="/profil" className="me">{me.name}</NavLink>

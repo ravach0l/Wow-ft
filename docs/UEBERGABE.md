@@ -92,6 +92,7 @@ Konfiguration und Log liegen in `~/.config/wowft/` bzw. `%APPDATA%\wowft\`.
 | `features.py` | Module, die Admins seitenweit schalten (bisher: Rennen) |
 | `privacy.py` | Freigaben je Charakter und Kategorie; zentrale Stelle für „wer sieht was“ |
 | `icons.py` | Talent-Icons: Icon-Name je Zauber-ID bei Wowhead nachschlagen (nach dem Upload im Hintergrund, Ergebnis in `spell_icons`), Bild beim ersten Abruf laden und unter `data/icons/` speichern; `/api/icons/<name>.jpg` liefert es aus. Die Browser fragen nie Dritte. Abschaltbar mit `WOWFT_ICON_LOOKUP=false` |
+| `dungeons.py` | Dungeon-Planer: Dungeons/Schlachtzüge mit Stufenbereichen (Classic-Werte, für Forever prüfen) und deutschen/englischen Instanznamen, um besiegte Bosse zuzuordnen. Endpunkt `/api/groups/{id}/dungeons`; die Zuordnung „wer passt“ macht `web/src/dungeons.ts` |
 | `discord.py` | Posts an Gruppen-Webhooks (nur Ereignisse der letzten 12 h) |
 | `api/*.py` | Endpunkte: `ingest`, `me` (Profil, Tokens, eigene Charaktere), `groups` (Gruppen, Einladungen, Übersicht, Feed, Rennen, Material), `characters` (Verlauf/Detail), `photos`, `admin`, `pairing` (Uploader koppeln) |
 | `models.py` | Tabellen: users, groups, group_members, tokens, characters (mit `state`-JSON), snapshots, events, photos, app_settings, pairings |
@@ -104,7 +105,7 @@ Die API-Doku gibt es im laufenden Server unter `/api/docs`.
 | Datei | Aufgabe |
 |---|---|
 | `App.tsx` | Login-Prüfung, Routen, Navigation (Rennen nur bei aktivem Modul) |
-| `pages/` | Übersicht, Charakter, Rennen, Material, Feed, Profil (Tokens, Gruppen, Discord, Admin), Einladung |
+| `pages/` | Übersicht, Charakter, Rennen, Dungeons, Material, Feed, Profil (Tokens, Gruppen, Discord, Admin), Einladung |
 | `components/` | Charakterkarte, Diagramm (eigenes SVG), Feed-Zeile, Aktualitäts-Hinweis |
 | `sort.ts`, `format.ts`, `wow.ts` | Sortierung/Gruppierung, deutsche Formate, Klassen- und Qualitätsfarben |
 

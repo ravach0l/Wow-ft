@@ -50,6 +50,8 @@ nach wenigen Sekunden auf der Webseite.
 
 ## Gut zu wissen
 
+- **Dungeons:** Unter „Dungeons“ steht, wer gerade in welchen Dungeon passt (nach Level, Allianz und
+  Horde getrennt) und wer dort schon einen Boss gelegt hat.
 - **Updates kommen von selbst:** Der Uploader prüft stündlich, ob es eine neue Version gibt, und
   aktualisiert sich und das Addon selbst. Neue Addon-Versionen wirken nach `/reload`.
 

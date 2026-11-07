@@ -5,7 +5,7 @@ from pydantic import BaseModel, Field
 from sqlalchemy import and_, func, not_, or_, select
 from sqlalchemy.orm import Session
 
-from .. import discord, metrics, privacy
+from .. import discord, dungeons, metrics, privacy
 from ..auth import CurrentUser, DbSession
 from ..config import get_settings
 from ..events import describe
@@ -347,3 +347,41 @@ def materials(group_id: int, user: CurrentUser, session: DbSession):
     for i in out:
         i["holders"].sort(key=lambda h: -(h["bags"] + h["bank"]))
     return out
+
+
+# --- Dungeon-Planer ---------------------------------------------------------------
+
+
+@router.get("/groups/{group_id}/dungeons")
+def dungeon_planner(group_id: int, user: CurrentUser, session: DbSession):
+    """Dungeons mit Stufen und die Charaktere der Gruppe (Level, Fraktion, schon besiegt).
+
+    Die Zuordnung „wer passt wohin“ macht die Webseite (web/src/dungeons.ts).
+    """
+    _membership(session, group_id, user)
+    chars = []
+    for c in _visible_characters(session, group_id):
+        level = session.scalar(
+            select(Snapshot.level).where(Snapshot.character_id == c.id).order_by(Snapshot.ts.desc()).limit(1)
+        )
+        if level is None:
+            continue
+        cleared: set[str] = set()
+        if privacy.event_visible(c, user.id, "boss"):
+            for data in session.scalars(
+                select(Event.data).where(Event.character_id == c.id, Event.type == "boss")
+            ):
+                cleared.update(dungeons.keys_for_instance((data or {}).get("instance")))
+        chars.append(
+            {
+                "id": c.id,
+                "name": c.name,
+                "class": c.class_,
+                "faction": c.faction,
+                "ownerId": c.user_id,
+                "ownerName": c.user.name,
+                "level": level,
+                "cleared": sorted(cleared),
+            }
+        )
+    return {"dungeons": [d.out() for d in dungeons.DUNGEONS], "characters": chars}

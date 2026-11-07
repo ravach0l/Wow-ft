@@ -1,5 +1,6 @@
 import { hiddenLabels, SHARE_CATEGORIES } from "./privacy";
 import { describe, expect, it } from "vitest";
+import { fitFor, planDungeons, suggestions } from "./dungeons";
 import { ago, duration, gold } from "./format";
 import { mergeMaterials } from "./pages/CharacterPage";
 import { talentGrid } from "./talents";
@@ -103,5 +104,48 @@ describe("talentGrid", () => {
     ]);
     expect(g.cells.find((c) => c.talent.name === "alt")!.row).toBe(1);
     expect(g.rows).toBe(2);
+  });
+});
+
+describe("Dungeon-Planer", () => {
+  const dm = { key: "dm", name: "Die Todesminen", zone: "Westfall", min: 17, max: 26, raid: false, size: 5 };
+  const wc = { key: "wc", name: "Höhlen", zone: "Brachland", min: 17, max: 24, raid: false, size: 5 };
+  const mc = { key: "mc", name: "Geschmolzener Kern", zone: "Schwarzfels", min: 60, max: 60, raid: true, size: 40 };
+  const pc = (id: number, ownerId: number, level: number, faction = "Alliance", cleared: string[] = []) => ({
+    id, name: `C${id}`, class: "MAGE", faction, ownerId, ownerName: `p${ownerId}`, level, cleared,
+  });
+
+  it("fitFor", () => {
+    expect(fitFor(17, dm)).toBe("fit");
+    expect(fitFor(26, dm)).toBe("fit");
+    expect(fitFor(14, dm)).toBe("soon");
+    expect(fitFor(13, dm)).toBeNull();
+    expect(fitFor(30, dm)).toBe("over");
+  });
+
+  it("zählt Personen statt Charaktere und trennt Fraktionen", () => {
+    const chars = [pc(1, 1, 20), pc(2, 1, 22), pc(3, 2, 18), pc(4, 3, 21, "Horde"), pc(5, 4, 15), pc(6, 5, 40)];
+    const [plan] = planDungeons([dm], chars);
+    const ally = plan.factions.find((f) => f.faction === "Alliance")!;
+    expect(ally.people).toBe(2); // Person 1 (zwei Charaktere) und Person 2
+    expect(ally.fit.map((c) => c.id)).toEqual([2, 1, 3]); // nach Level absteigend
+    expect(ally.soon.map((c) => c.id)).toEqual([5]);
+    expect(ally.over.map((c) => c.id)).toEqual([6]);
+    expect(plan.factions[0].faction).toBe("Alliance"); // mehr Personen zuerst
+    expect(plan.best).toBe(2);
+  });
+
+  it("blendet leere Dungeons aus, außer mit showAll; Schlachtzüge zuletzt", () => {
+    const chars = [pc(1, 1, 20)];
+    expect(planDungeons([mc, dm, wc], chars).map((p) => p.dungeon.key)).toEqual(["wc", "dm"]);
+    expect(planDungeons([mc, dm], [pc(1, 1, 5)])).toEqual([]);
+    expect(planDungeons([mc, dm], [pc(1, 1, 5)], true).map((p) => p.dungeon.key)).toEqual(["dm", "mc"]);
+  });
+
+  it("Vorschläge brauchen mindestens zwei Personen", () => {
+    // 25, 25, 20: alle drei passen in die Todesminen (17–26), nur einer in die Höhlen (17–24)
+    const plans = planDungeons([dm, wc], [pc(1, 1, 25), pc(2, 2, 25), pc(3, 3, 20)]);
+    expect(suggestions(plans).map((p) => [p.dungeon.key, p.best])).toEqual([["dm", 3]]);
+    expect(suggestions(planDungeons([dm], [pc(1, 1, 20)]))).toEqual([]);
   });
 });
