@@ -97,6 +97,17 @@ function Collect.Reputation()
   return out
 end
 
+-- Icon eines Zaubers (Datei-ID). Die Webseite holt das passende Bild über die Zauber-ID.
+local function SpellIconById(spellID)
+  if not spellID then
+    return nil
+  end
+  if C_Spell and C_Spell.GetSpellTexture then
+    return C_Spell.GetSpellTexture(spellID)
+  end
+  return GetSpellTexture and GetSpellTexture(spellID)
+end
+
 local function SpellNameById(spellID)
   if not spellID then
     return nil
@@ -126,12 +137,15 @@ local function TraitTalents()
         local def = entry and entry.definitionID and C_Traits.GetDefinitionInfo(entry.definitionID)
         local name = def and (def.overrideName or SpellNameById(def.spellID))
         points = points + (node.currentRank or 0)
+        local spellID = def and def.spellID
         list[#list + 1] = {
           name = name or ("Talent " .. tostring(nodeID)),
           rank = node.currentRank or 0,
           max = node.maxRanks,
           tier = node.posY,
           col = node.posX,
+          spell = spellID,
+          icon = SpellIconById(spellID),
         }
       end
     end
@@ -156,11 +170,11 @@ function Collect.Talents()
     local tabName = type(a) == "string" and a or b
     local points, list = 0, {}
     for i = 1, GetNumTalents(tab) do
-      local name, _, tier, column, rank, maxRank = GetTalentInfo(tab, i)
+      local name, icon, tier, column, rank, maxRank = GetTalentInfo(tab, i)
       if name then
         rank = rank or 0
         points = points + rank
-        list[#list + 1] = { name = name, rank = rank, max = maxRank, tier = tier, col = column }
+        list[#list + 1] = { name = name, rank = rank, max = maxRank, tier = tier, col = column, icon = icon }
       end
     end
     out[#out + 1] = { name = tabName, points = points, talents = list }

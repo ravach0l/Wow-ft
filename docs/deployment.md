@@ -36,6 +36,10 @@ Läuft Caddy selbst in Docker, den Container zusätzlich in dessen Netzwerk hän
 (z. B. per `docker-compose.override.yml` mit `networks: [heimserver_net]`, `external: true`)
 und im Caddyfile `reverse_proxy wowft:8000` eintragen.
 
+Für die Talent-Icons braucht der Server ausgehend Zugriff auf `nether.wowhead.com` (Icon-Namen) und
+`wow.zamimg.com` (Bilder). Geladene Bilder liegen danach in `deploy/data/icons/`. Ohne Zugriff zeigt
+die Seite die Talente als Textkacheln wie bisher; abschalten lässt es sich mit `WOWFT_ICON_LOOKUP=false`.
+
 Migrationen laufen beim Start automatisch. Trag in `.env` unter `WOWFT_ADMIN_USERS`
 deinen Authentik-Benutzernamen ein: Dann erscheint im Profil der Bereich „Admin: Module“,
 in dem du z. B. das Level-Rennen (standardmäßig aus) für alle einschaltest. Die Datenbank liegt in `deploy/data/wowft.db`.

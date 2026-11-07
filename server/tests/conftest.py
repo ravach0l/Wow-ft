@@ -17,6 +17,9 @@ def settings(tmp_path, monkeypatch):
     monkeypatch.setenv("WOWFT_DATABASE_URL", url)
     monkeypatch.setenv("WOWFT_DEV_LOGIN", "true")
     monkeypatch.setenv("WOWFT_SECRET_KEY", "test")
+    # Keine echten Anfragen an Wowhead in Tests (tests/test_icons.py ersetzt die Abfragen gezielt).
+    monkeypatch.setenv("WOWFT_ICON_LOOKUP", "false")
+    monkeypatch.setenv("WOWFT_DATA_DIR", str(tmp_path / "data"))
     config.get_settings.cache_clear()
     db.reset_engine()
     auth.limiter.reset()

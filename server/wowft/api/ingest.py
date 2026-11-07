@@ -3,7 +3,7 @@ import zlib
 from fastapi import APIRouter, BackgroundTasks, HTTPException, Request, UploadFile
 from sqlalchemy.orm import Session
 
-from .. import discord
+from .. import discord, icons
 from ..auth import CurrentUser, DbSession, TokenUser, client_ip, limiter
 from ..config import get_settings
 from ..ingest import IngestError, decode, store
@@ -42,6 +42,15 @@ def _ingest(
     except IngestError as e:
         raise HTTPException(422, str(e)) from e
     result, new_event_ids = store(session, user, data)
+    # Talent-Icons: unbekannte Zauber-IDs nach der Antwort bei Wowhead nachschlagen.
+    ids = (
+        set().union(*(icons.spell_ids(c.state()) for c in data.characters.values()))
+        if data.characters
+        else set()
+    )
+    todo = icons.missing(session, ids)
+    if todo:
+        background.add_task(icons.resolve_spells, todo)
     posts = discord.build_posts(session, new_event_ids)
     if posts:
         background.add_task(discord.send, posts)

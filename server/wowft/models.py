@@ -160,3 +160,13 @@ class Pairing(Base):
     user_id: Mapped[int | None] = mapped_column(ForeignKey("users.id", ondelete="CASCADE"))
     created: Mapped[int] = mapped_column(Integer, default=now)
     expires: Mapped[int] = mapped_column(Integer, index=True)
+
+
+class SpellIcon(Base):
+    """Icon-Name je Zauber-ID (Cache für Wowhead-Abfragen). icon = None: nichts gefunden."""
+
+    __tablename__ = "spell_icons"
+
+    spell_id: Mapped[int] = mapped_column(Integer, primary_key=True, autoincrement=False)
+    icon: Mapped[str | None] = mapped_column(String(100))
+    checked: Mapped[int] = mapped_column(Integer, default=now)

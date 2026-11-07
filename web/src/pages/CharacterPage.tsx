@@ -220,31 +220,45 @@ export function mergeMaterials(
 
 function TalentTree({ tab }: { tab: TalentTab }) {
   const grid = talentGrid(tab.talents);
+  const withIcons = tab.talents.some((t) => t.iconUrl);
+  const learned = tab.talents.filter((t) => t.rank > 0);
+  const size = withIcons ? 44 : 52;
   return (
     <figure className="tree">
       <figcaption className="meta">{tab.name} ({tab.points})</figcaption>
       <div
-        className="tree-grid"
+        className={`tree-grid${withIcons ? " icons" : ""}`}
         role="list"
-        style={{ gridTemplateColumns: `repeat(${grid.cols}, 52px)`, gridTemplateRows: `repeat(${grid.rows}, auto)` }}
+        style={{ gridTemplateColumns: `repeat(${grid.cols}, ${size}px)`, gridTemplateRows: `repeat(${grid.rows}, auto)` }}
       >
         {grid.cells.map(({ talent: x, row, col }) => {
           const full = x.max != null && x.rank >= x.max;
           const state = x.rank === 0 ? "none" : full ? "full" : "part";
+          const label = `${x.name} ${x.rank}/${x.max ?? "?"}`;
           return (
             <div
               key={`${row}-${col}-${x.name}`}
               role="listitem"
-              className={`talent ${state}`}
+              aria-label={label}
+              className={`talent ${state}${x.iconUrl ? " has-icon" : ""}`}
               style={{ gridRow: row + 1, gridColumn: col + 1 }}
-              title={`${x.name} ${x.rank}/${x.max ?? "?"}`}
+              title={label}
             >
-              <span className="tname">{x.name}</span>
+              {x.iconUrl ? (
+                <img src={x.iconUrl} alt="" loading="lazy" />
+              ) : (
+                <span className="tname">{x.name}</span>
+              )}
               <span className="trank">{x.rank}/{x.max ?? "?"}</span>
             </div>
           );
         })}
       </div>
+      {withIcons && learned.length > 0 && (
+        <p className="meta talent-list">
+          {learned.map((t) => `${t.name} ${t.rank}/${t.max ?? "?"}`).join(" · ")}
+        </p>
+      )}
     </figure>
   );
 }

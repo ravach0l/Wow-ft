@@ -92,6 +92,8 @@ export interface Talent {
   max: number | null;
   tier?: number | null;
   col?: number | null;
+  /** Bild vom eigenen Server (/api/icons/…); null, solange kein Icon bekannt ist. */
+  iconUrl?: string | null;
 }
 
 export interface TalentTab {

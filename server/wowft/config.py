@@ -29,6 +29,9 @@ class Settings(BaseSettings):
     max_upload_bytes: int = 5 * 1024 * 1024
     max_level: int = 60
 
+    # Talent-Icons: Namen per Zauber-ID bei Wowhead nachschlagen, Bilder zwischenspeichern.
+    icon_lookup: bool = True
+
     ingest_rate_per_minute: int = 30
     auth_rate_per_minute: int = 20
 

@@ -44,6 +44,13 @@ def reset_engine() -> None:
     _SessionLocal = None
 
 
+def new_session() -> Session:
+    """Eigene Sitzung, z. B. für Hintergrundaufgaben nach der Antwort."""
+    get_engine()
+    assert _SessionLocal is not None
+    return _SessionLocal()
+
+
 def get_session() -> Iterator[Session]:
     get_engine()
     assert _SessionLocal is not None

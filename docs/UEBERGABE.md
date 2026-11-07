@@ -90,10 +90,11 @@ Konfiguration und Log liegen in `~/.config/wowft/` bzw. `%APPDATA%\wowft\`.
 | `auth.py` | Authentik-Login (OIDC), Session-Cookie, Upload-Tokens (SHA-256), Admin-Prüfung, Rate-Limit |
 | `features.py` | Module, die Admins seitenweit schalten (bisher: Rennen) |
 | `privacy.py` | Freigaben je Charakter und Kategorie; zentrale Stelle für „wer sieht was“ |
+| `icons.py` | Talent-Icons: Icon-Name je Zauber-ID bei Wowhead nachschlagen (nach dem Upload im Hintergrund, Ergebnis in `spell_icons`), Bild beim ersten Abruf laden und unter `data/icons/` speichern; `/api/icons/<name>.jpg` liefert es aus. Die Browser fragen nie Dritte. Abschaltbar mit `WOWFT_ICON_LOOKUP=false` |
 | `discord.py` | Posts an Gruppen-Webhooks (nur Ereignisse der letzten 12 h) |
 | `api/*.py` | Endpunkte: `ingest`, `me` (Profil, Tokens, eigene Charaktere), `groups` (Gruppen, Einladungen, Übersicht, Feed, Rennen, Material), `characters` (Verlauf/Detail), `photos`, `admin`, `pairing` (Uploader koppeln) |
 | `models.py` | Tabellen: users, groups, group_members, tokens, characters (mit `state`-JSON), snapshots, events, photos, app_settings, pairings |
-| `alembic/versions/` | Migrationen `0001` (Grundschema), `0002` (Seiteneinstellungen), `0003` (Freigaben), `0004` (Kopplung). **Ab jetzt nur neue Migrationen anlegen, alte nicht mehr ändern.** |
+| `alembic/versions/` | Migrationen `0001` (Grundschema), `0002` (Seiteneinstellungen), `0003` (Freigaben), `0004` (Kopplung), `0005` (Talent-Icons). **Ab jetzt nur neue Migrationen anlegen, alte nicht mehr ändern.** |
 
 Die API-Doku gibt es im laufenden Server unter `/api/docs`.
 

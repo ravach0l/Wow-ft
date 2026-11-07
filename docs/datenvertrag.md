@@ -94,7 +94,7 @@ Snapshots entstehen bei Login (nach der `/played`-Antwort), Level-Up, Zonenwechs
 | `skills` | `{ name, rank, max, header }` | `GetSkillLineInfo` | Login, Änderung, Logout |
 | `equipment` | `{ slot, id, name, quality }` | `GetInventoryItemLink/Quality` | dto. |
 | `reputation` | `{ id, name, standing, value, min, max }` | `GetFactionInfo` | dto. |
-| `talents` | `{ name, points, talents = { {name, rank, max, tier, col} } }` (alle Felder des Baums, auch mit `rank = 0`; max. 250 je Baum; die Webseite legt sie nach `tier`/`col` aufs Raster) | `GetTalentInfo`, `C_Traits` | dto. |
+| `talents` | `{ name, points, talents = { {name, rank, max, tier, col, spell, icon} } }` (alle Felder des Baums, auch mit `rank = 0`; max. 250 je Baum; die Webseite legt sie nach `tier`/`col` aufs Raster). `spell` = Zauber-ID (moderne Talentbäume), `icon` = Icon-Datei-ID bzw. Icon-Pfad (klassische API); daraus macht der Server die Talent-Bilder (ab Addon 0.4.0) | `GetTalentInfo`, `C_Traits`, `C_Spell.GetSpellTexture` | dto. |
 | `materials` | `{ bags = {…}, bank = {…}, bankScanned }`, Einträge `{ id, name, count }` | Taschen-API, nur Item-Klasse 7 (Handwerkswaren) | Taschen laufend, Bank beim Öffnen |
 | `photoRequests` | Zeitpunkte von `/ft foto`-Screenshots, max. 20 | `SCREENSHOT_SUCCEEDED` | bei `/ft foto` |
 | `settings` | `trackGold`, `trackMaterials` | `/ft gold an\|aus`, `/ft material an\|aus` | |

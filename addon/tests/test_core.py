@@ -71,7 +71,7 @@ function GetNumTalentTabs() return 1 end
 function GetTalentTabInfo() return 161, "Waffen" end
 function GetNumTalents() return 2 end
 function GetTalentInfo(_, i)
-  if i == 1 then return "Verbessertes Heldenhaftes", nil, 1, 1, 3, 3 end
+  if i == 1 then return "Verbessertes Heldenhaftes", "Interface\\Icons\\Ability_Warrior_BattleShout", 1, 1, 3, 3 end
   return "Taktiker", nil, 1, 2, 0, 5
 end
 local BAGS = {
@@ -208,6 +208,9 @@ def test_collects_phase4_state(lua):
         ("Verbessertes Heldenhaftes", 3, 3, 1, 1),
         ("Taktiker", 0, 5, 1, 2),
     ]
+    # Klassik-API: Icon als Pfad (daraus wird der Bildname), keine Zauber-ID.
+    first = c.talents[1].talents[1]
+    assert first.icon == "Interface\\Icons\\Ability_Warrior_BattleShout" and first.spell is None
     bags = c.materials.bags
     assert len(bags) == 1 and (bags[1].id, bags[1].name, bags[1].count) == (2770, "Kupfererz", 20)
     assert c.materials.bank is None
@@ -283,7 +286,10 @@ C_SpecializationInfo = {
   GetSpecialization = function() return 1 end,
   GetSpecializationInfo = function() return 102, "Gleichgewicht" end,
 }
-C_Spell = { GetSpellName = function(id) return "Zauber " .. id end }
+C_Spell = {
+  GetSpellName = function(id) return "Zauber " .. id end,
+  GetSpellTexture = function(id) return 130000 + id end,
+}
 C_Traits = {
   GetConfigInfo = function() return { treeIDs = { 672 } } end,
   GetTreeNodes = function() return { 10, 11, 12 } end,
@@ -336,6 +342,8 @@ def test_collectors_with_forever_api(lua):
         ("Zauber 1101", 0, 1),
         ("Mondfeuer", 1, 1),
     ]
+    # Moderne Talentbäume: Zauber-ID und Icon-Datei-ID für die Bilder auf der Webseite.
+    assert [(t.spell, t.icon) for t in talents][0] == (1100, 131100)
 
     mats = lua.eval("NS.Collect.Materials({0})")
     assert [(m.id, m.name, m.count) for m in mats.values()] == [(2589, "Leinenstoff", 12)]

@@ -2,7 +2,7 @@
 ## Title: WowFT – Freundes-Tracker
 ## Notes: Speichert Level, XP und Spielzeit für die Freundes-Webseite.
 ## Author: ravach0l
-## Version: 0.3.0
+## Version: 0.4.0
 ## SavedVariables: WowFTDB
 
 Util.lua

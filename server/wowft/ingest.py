@@ -90,6 +90,8 @@ class TalentIn(_In):
     max: int | None = None
     tier: int | None = None
     col: int | None = None
+    spell: int | None = Field(default=None, ge=1)  # Zauber-ID (moderne Talentbäume)
+    icon: int | str | None = None  # Datei-ID oder Pfad wie Interface\Icons\Spell_Nature_Starfall
 
 
 class TalentTabIn(_In):
