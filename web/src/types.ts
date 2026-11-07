@@ -133,11 +133,24 @@ export interface MaterialItem {
     characterId: number;
     name: string;
     class: string | null;
+    ownerId: number;
     ownerName: string;
     bags: number;
     bank: number;
     bankScanned: number | null;
   }[];
+}
+
+export interface MaterialRequest {
+  id: number;
+  itemId: number | null;
+  itemName: string;
+  count: number;
+  userId: number;
+  userName: string;
+  mine: boolean;
+  canManage: boolean;
+  holders: { characterId: number; name: string; class: string | null; ownerName: string; count: number }[];
 }
 
 export interface GroupDetail {

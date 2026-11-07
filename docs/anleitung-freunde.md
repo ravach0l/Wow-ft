@@ -52,6 +52,9 @@ nach wenigen Sekunden auf der Webseite.
 
 - **Dungeons:** Unter „Dungeons“ steht, wer gerade in welchen Dungeon passt (nach Level, Allianz und
   Horde getrennt) und wer dort schon einen Boss gelegt hat.
+- **Material suchen:** Unter „Mehr → Material“ kannst du eintragen, was du suchst („10 Kupferbarren“).
+  Dort steht dann, wer es hat. Wünsche laufen nach 7 Tagen ab.
+- **Wer ist wo:** Unten auf der Übersicht steht, wer zuletzt in welcher Zone war (wenn freigegeben).
 - **Updates kommen von selbst:** Der Uploader prüft stündlich, ob es eine neue Version gibt, und
   aktualisiert sich und das Addon selbst. Neue Addon-Versionen wirken nach `/reload`.
 

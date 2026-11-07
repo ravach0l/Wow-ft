@@ -242,3 +242,13 @@ ol.steps li { margin-bottom: 6px; }
 .where .zone { min-width: 9em; color: var(--text-2); }
 .where li.together .zone { color: var(--text); font-weight: 600; }
 .where .chips { margin-top: 0; }
+@media (max-width: 640px) {
+  .where li { flex-direction: column; align-items: flex-start; gap: 6px; }
+  .where .zone { min-width: 0; }
+}
+
+.badge {
+  display: inline-block; margin-left: 8px; padding: 1px 7px; border-radius: 999px; font-size: .72rem; font-weight: 600;
+  background: color-mix(in srgb, var(--accent) 22%, var(--surface)); color: var(--accent-soft); vertical-align: middle;
+}
+input[type="number"] { background: var(--surface); border: 1px solid var(--line); border-radius: 8px; padding: 7px 10px; }

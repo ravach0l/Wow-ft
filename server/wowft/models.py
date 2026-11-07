@@ -170,3 +170,21 @@ class SpellIcon(Base):
     spell_id: Mapped[int] = mapped_column(Integer, primary_key=True, autoincrement=False)
     icon: Mapped[str | None] = mapped_column(String(100))
     checked: Mapped[int] = mapped_column(Integer, default=now)
+
+
+class MaterialRequest(Base):
+    """Material-Wunsch in einer Gruppe („Ich suche 10 Kupferbarren“), läuft nach 7 Tagen ab."""
+
+    __tablename__ = "material_requests"
+
+    id: Mapped[int] = mapped_column(primary_key=True)
+    group_id: Mapped[int] = mapped_column(ForeignKey("groups.id", ondelete="CASCADE"), index=True)
+    user_id: Mapped[int] = mapped_column(ForeignKey("users.id", ondelete="CASCADE"))
+    item_id: Mapped[int | None] = mapped_column(Integer)
+    item_name: Mapped[str] = mapped_column(String(150))
+    count: Mapped[int] = mapped_column(Integer)
+    created: Mapped[int] = mapped_column(Integer, default=now)
+    expires: Mapped[int] = mapped_column(Integer)
+    done: Mapped[int | None] = mapped_column(Integer)
+
+    user: Mapped[User] = relationship()

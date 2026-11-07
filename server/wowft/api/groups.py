@@ -317,9 +317,14 @@ def race(group_id: int, user: CurrentUser, session: DbSession):
 def materials(group_id: int, user: CurrentUser, session: DbSession):
     """Handwerksmaterialien der Gruppe: wer hat wie viel (Taschen + letzter Bankstand)."""
     _membership(session, group_id, user)
+    return group_materials(session, group_id, user.id)
+
+
+def group_materials(session: Session, group_id: int, viewer_id: int) -> list[dict]:
+    """Materialien aller sichtbaren Charaktere, so wie `viewer_id` sie sehen darf."""
     items: dict[int, dict] = {}
     for c in _visible_characters(session, group_id):
-        if "materials" in privacy.hidden_for(c, user.id):
+        if "materials" in privacy.hidden_for(c, viewer_id):
             continue
         mats = (c.state or {}).get("materials") or {}
         per_item: dict[int, dict] = {}
@@ -337,6 +342,7 @@ def materials(group_id: int, user: CurrentUser, session: DbSession):
                     "characterId": c.id,
                     "name": c.name,
                     "class": c.class_,
+                    "ownerId": c.user_id,
                     "ownerName": c.user.name,
                     "bags": e["bags"],
                     "bank": e["bank"],
