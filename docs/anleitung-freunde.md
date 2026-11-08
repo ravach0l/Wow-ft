@@ -53,6 +53,9 @@ nach wenigen Sekunden auf der Webseite.
 - **Material suchen:** Unter „Mehr → Material“ kannst du eintragen, was du suchst („10 Kupferbarren“).
   Dort steht dann, wer es hat. Wünsche laufen nach 7 Tagen ab.
 - **Wer ist wo:** Unten auf der Übersicht steht, wer zuletzt in welcher Zone war (wenn freigegeben).
+- **Rezepte:** Öffne im Spiel einmal deine Berufsfenster. Dann sehen alle unter „Mehr → Material“, wer was
+  herstellen kann und wer die Zutaten hat.
+- **Im Chat zeigen:** `/ft share` schreibt deinen Stand in die Gruppe (oder `/ft share gilde`).
 - **Updates kommen von selbst:** Der Uploader prüft stündlich, ob es eine neue Version gibt, und
   aktualisiert sich und das Addon selbst. Neue Addon-Versionen wirken nach `/reload`.
 

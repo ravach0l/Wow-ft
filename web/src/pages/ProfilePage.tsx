@@ -318,7 +318,45 @@ function DiscordSetting({ group, onSaved }: { group: GroupDetail; onSaved: () =>
         <button className="btn small" type="submit">Speichern</button>
       </div>
       {msg && <p className="meta" style={{ marginTop: 6 }}>{msg}</p>}
+      {group.discordWebhook && <WeeklySetting group={group} onSaved={onSaved} />}
     </form>
+  );
+}
+
+function WeeklySetting({ group, onSaved }: { group: GroupDetail; onSaved: () => void }) {
+  const [on, setOn] = useState(group.weeklyReport !== false);
+  const [preview, setPreview] = useState<string | null>(null);
+  const [msg, setMsg] = useState<string | null>(null);
+  async function toggle(v: boolean) {
+    setOn(v);
+    await api.patch(`/api/groups/${group.id}`, { weeklyReport: v });
+    onSaved();
+  }
+  async function show() {
+    const r = await api.get<{ text: string | null }>(`/api/groups/${group.id}/weekly`);
+    setPreview(r.text ?? "Diese Woche ist noch nichts passiert; dann wird auch nichts geschickt.");
+  }
+  async function send() {
+    try {
+      await api.post(`/api/groups/${group.id}/weekly/send`);
+      setMsg("Geschickt – schau in den Discord-Kanal.");
+    } catch (e) {
+      setMsg((e as Error).message);
+    }
+  }
+  return (
+    <div style={{ marginTop: 10 }}>
+      <label className="toggle">
+        <input type="checkbox" checked={on} onChange={(e) => toggle(e.target.checked)} />
+        Wochenrückblick sonntags um 19 Uhr in den Kanal
+      </label>
+      <div className="inline-form" style={{ marginTop: 6 }}>
+        <button type="button" className="btn small" onClick={show}>Vorschau</button>
+        <button type="button" className="btn small" onClick={send}>Jetzt testen</button>
+      </div>
+      {preview && <pre className="weekly-preview">{preview}</pre>}
+      {msg && <p className="meta" style={{ marginTop: 6 }}>{msg}</p>}
+    </div>
   );
 }
 

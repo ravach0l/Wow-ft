@@ -54,6 +54,9 @@ zeigt oben, wann der jüngste Upload kam.
 | `Collect.lua` | Phase-4-Sammler: Berufe, Ausrüstung, Ruf, Talente, Material. Jeder läuft in `pcall`; Fehler landen in `apiErrors` und `/ft status` zeigt sie. |
 | `UI.lua` | Minimap-Button (Tooltip mit Level, XP, Snapshot-Stand; Linksklick Einstellungen, Rechtsklick Foto, verschiebbar). Keine eigene XP-Leiste. |
 | `Settings.lua` | Einstellungsfenster (`/ft config`): Server und Upload-Token (landen in `WowFTDB.upload`), Schalter für Gold, Material und Minimap-Button |
+| `Combat.lua` | Letzte Treffer aus dem Kampflog; beim Tod als Todesursache in den `deathLog` |
+| `Recipes.lua` | Rezepte beim Öffnen des Berufsfensters (klassisch und modern) |
+| `Live.lua` | Messtest für fast live (`/ft livetest`) |
 | `Photo.lua` | `/ft foto`: Vollbild mit 3D-Modell, löst Screenshot aus, merkt sich den Zeitpunkt |
 
 Befehle: `/ft config|show|hide|status|snap|foto|api`, `/ft gold an|aus`, `/ft material an|aus`.
@@ -93,10 +96,11 @@ Konfiguration und Log liegen in `~/.config/wowft/` bzw. `%APPDATA%\wowft\`.
 | `privacy.py` | Freigaben je Charakter und Kategorie; zentrale Stelle für „wer sieht was“ |
 | `icons.py` | Talent-Icons: Icon-Name je Zauber-ID bei Wowhead nachschlagen (nach dem Upload im Hintergrund, Ergebnis in `spell_icons`), Bild beim ersten Abruf laden und unter `data/icons/` speichern; `/api/icons/<name>.jpg` liefert es aus. Die Browser fragen nie Dritte. Abschaltbar mit `WOWFT_ICON_LOOKUP=false` |
 | `dungeons.py` | Dungeon-Planer: Dungeons/Schlachtzüge mit Stufenbereichen (Classic-Werte, für Forever prüfen) und deutschen/englischen Instanznamen, um besiegte Bosse zuzuordnen. Endpunkt `/api/groups/{id}/dungeons`; die Zuordnung „wer passt“ macht `web/src/dungeons.ts` |
+| `weekly.py` | Wochenrückblick: sonntags ab 19 Uhr (Europe/Berlin) je Gruppe mit Webhook einmal pro Woche (Level, Bosse, Tode, Berufe; keine Spielzeit). Läuft als Hintergrundschleife im Server (`WOWFT_WEEKLY_JOB=false` schaltet ab); Vorschau/Testversand für die Gruppenleitung |
 | `discord.py` | Posts an Gruppen-Webhooks (nur Ereignisse der letzten 12 h) |
-| `api/*.py` | Endpunkte: `requests` (Material-Wünsche), `ingest`, `me` (Profil, Tokens, eigene Charaktere), `groups` (Gruppen, Einladungen, Übersicht, Feed, Rennen, Material), `characters` (Verlauf/Detail), `photos`, `admin`, `pairing` (Uploader koppeln) |
+| `api/*.py` | Endpunkte: `recipes` (Rezeptsuche mit Materialabgleich), `requests` (Material-Wünsche), `ingest`, `me` (Profil, Tokens, eigene Charaktere), `groups` (Gruppen, Einladungen, Übersicht, Feed, Rennen, Material), `characters` (Verlauf/Detail), `photos`, `admin`, `pairing` (Uploader koppeln) |
 | `models.py` | Tabellen: users, groups, group_members, tokens, characters (mit `state`-JSON), snapshots, events, photos, app_settings, pairings, spell_icons, material_requests |
-| `alembic/versions/` | Migrationen `0001` (Grundschema), `0002` (Seiteneinstellungen), `0003` (Freigaben), `0004` (Kopplung), `0005` (Talent-Icons), `0006` (Material-Wünsche). **Ab jetzt nur neue Migrationen anlegen, alte nicht mehr ändern.** |
+| `alembic/versions/` | Migrationen `0001` (Grundschema), `0002` (Seiteneinstellungen), `0003` (Freigaben), `0004` (Kopplung), `0005` (Talent-Icons), `0006` (Material-Wünsche), `0007` (Wochenrückblick, Foto-Zone). **Ab jetzt nur neue Migrationen anlegen, alte nicht mehr ändern.** |
 
 Die API-Doku gibt es im laufenden Server unter `/api/docs`.
 

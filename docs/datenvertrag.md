@@ -89,13 +89,16 @@ Snapshots entstehen bei Login (nach der `/played`-Antwort), Level-Up, Zonenwechs
 | Feld | Inhalt | Herkunft | Wann |
 |---|---|---|---|
 | `deaths` | Anzahl Tode | `PLAYER_DEAD` | laufend |
-| `deathLog` | `{ t, level, zone }`, max. 50 | `PLAYER_DEAD` | laufend |
+| `deathLog` | `{ t, level, zone, killer }`, max. 50; `killer = { source, spell, environment, amount, overkill }` = letzter Treffer innerhalb von 10 s (ab Addon 0.5.0) | `PLAYER_DEAD`, Kampflog | laufend |
 | `bossKills` | `{ t, id, name, instance, level }`, max. 100 | `ENCOUNTER_END` (success) | laufend |
 | `skills` | `{ name, rank, max, header }` | `GetSkillLineInfo` | Login, Änderung, Logout |
 | `equipment` | `{ slot, id, name, quality }` | `GetInventoryItemLink/Quality` | dto. |
 | `reputation` | `{ id, name, standing, value, min, max }` | `GetFactionInfo` | dto. |
 | `talents` | `{ name, points, talents = { {name, rank, max, tier, col, spell, icon} } }` (alle Felder des Baums, auch mit `rank = 0`; max. 250 je Baum; die Webseite legt sie nach `tier`/`col` aufs Raster). `spell` = Zauber-ID (moderne Talentbäume), `icon` = Icon-Datei-ID bzw. Icon-Pfad (klassische API); daraus macht der Server die Talent-Bilder (ab Addon 0.4.0) | `GetTalentInfo`, `C_Traits`, `C_Spell.GetSpellTexture` | dto. |
 | `materials` | `{ bags = {…}, bank = {…}, bankScanned }`, Einträge `{ id, name, count }` | Taschen-API, nur Item-Klasse 7 (Handwerkswaren) | Taschen laufend, Bank beim Öffnen |
+| `recipes` | `{ { profession, scanned, list = { {name, item, spell, reagents = { {id, name, count} } } } } }`, je Beruf, max. 400 Rezepte (ab 0.5.0) | Berufsfenster: TradeSkill, Craft oder `C_TradeSkillUI` | beim Öffnen des Berufsfensters |
+| `bind` | Ruhestein-Ort (ab 0.5.0) | `GetBindLocation` | Login, Änderung |
+| `photoInfo` | `{ t, level, zone, subzone }` je `/ft foto`, max. 20 (ab 0.5.0) | | bei `/ft foto` |
 | `photoRequests` | Zeitpunkte von `/ft foto`-Screenshots, max. 20 | `SCREENSHOT_SUCCEEDED` | bei `/ft foto` |
 | `settings` | `trackGold`, `trackMaterials` | `/ft gold an\|aus`, `/ft material an\|aus` | |
 | `apiErrors` | Fehlermeldung je Sammler, falls die Forever-API abweicht | `pcall` | nur zur Diagnose, Server ignoriert es |

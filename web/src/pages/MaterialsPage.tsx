@@ -2,6 +2,7 @@ import { useState, type FormEvent } from "react";
 import { Link, useParams } from "react-router-dom";
 import { ago, number } from "../format";
 import { api } from "../api";
+import RecipeSearch from "../components/RecipeSearch";
 import { useApi } from "../hooks";
 import type { MaterialItem, MaterialRequest } from "../types";
 import { classColor } from "../wow";
@@ -28,6 +29,7 @@ export default function MaterialsPage() {
       knownNames={data.map((i) => i.name).filter((n): n is string => !!n)}
       reload={requests.reload}
     />
+    <RecipeSearch groupId={groupId!} onWished={requests.reload} />
     <div className="section">
       <h2>Handwerksmaterialien</h2>
       <p>Taschen und letzter bekannter Bankstand. Die Bank wird nur beim Öffnen im Spiel gelesen.</p>

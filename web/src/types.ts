@@ -57,7 +57,7 @@ export interface History {
   snapshots: { ts: number; level: number; xp: number; xpMax: number; playedTotal: number | null; zone: string | null }[];
   events: FeedEvent[];
   state: CharacterDetailState;
-  photos: { id: number; url: string; ts: number; level: number | null }[];
+  photos: { id: number; url: string; ts: number; level: number | null; zone?: string | null }[];
   hidden: string[];
 }
 
@@ -115,6 +115,8 @@ export interface CharacterDetailState {
   talents: TalentTab[];
   materials: { bags: MaterialEntry[]; bank: MaterialEntry[] | null; bankScanned: number | null } | null;
   deaths: number | null;
+  bind?: string | null;
+  recipes?: { profession: string; count: number; scanned: number | null }[];
 }
 
 export interface RaceSeries {
@@ -159,6 +161,7 @@ export interface GroupDetail {
   role: "owner" | "member";
   inviteCode?: string;
   discordWebhook?: string | null;
+  weeklyReport?: boolean;
   members: { id: number; name: string; role: string }[];
 }
 
@@ -207,4 +210,18 @@ export interface PlannerCharacter {
 export interface PlannerData {
   dungeons: Dungeon[];
   characters: PlannerCharacter[];
+}
+
+export interface RecipeResult {
+  name: string;
+  item: number | null;
+  profession: string | null;
+  crafters: { characterId: number; name: string; class: string | null; ownerName: string }[];
+  reagents: {
+    id: number | null;
+    name: string | null;
+    count: number;
+    total: number;
+    holders: { characterId: number; name: string; class: string | null; ownerName: string; count: number }[];
+  }[];
 }

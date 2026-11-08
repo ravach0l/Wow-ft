@@ -252,3 +252,9 @@ ol.steps li { margin-bottom: 6px; }
   background: color-mix(in srgb, var(--accent) 22%, var(--surface)); color: var(--accent-soft); vertical-align: middle;
 }
 input[type="number"] { background: var(--surface); border: 1px solid var(--line); border-radius: 8px; padding: 7px 10px; }
+
+.weekly-preview {
+  white-space: pre-wrap; font-family: inherit; font-size: .85rem; color: var(--text-2);
+  background: var(--bg); border: 1px solid var(--line); border-radius: 8px; padding: 10px; margin: 8px 0 0;
+}
+.reagent { align-items: center; }

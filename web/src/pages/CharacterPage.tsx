@@ -40,7 +40,9 @@ export default function CharacterPage() {
         {photo && (
           <figure className="photo">
             <img src={photo.url} alt={`${c.name} mit Level ${photo.level ?? "?"}`} />
-            <figcaption>{photo.level ? `Level ${photo.level} · ` : ""}{dateTime(photo.ts)}</figcaption>
+            <figcaption>
+              {[photo.level ? `Level ${photo.level}` : null, photo.zone, dateTime(photo.ts)].filter(Boolean).join(" · ")}
+            </figcaption>
           </figure>
         )}
         <div className="card">
@@ -70,6 +72,7 @@ export default function CharacterPage() {
               </>
             )}
             {c.deaths != null && <Stat k="Tode" v={number(c.deaths)} />}
+            {data.state.bind && <Stat k="Ruhestein" v={data.state.bind} />}
             {c.gold != null && <Stat k="Gold" v={gold(c.gold)} />}
           </div>
         </div>
@@ -152,6 +155,12 @@ function StateSections({ state }: { state: CharacterDetailState }) {
               </div>
             );
           })}
+          {(state.recipes ?? []).length > 0 && (
+            <p className="meta" style={{ margin: 0 }}>
+              Rezepte bekannt:{" "}
+              {(state.recipes ?? []).map((r) => `${r.profession} (${r.count})`).join(" · ")}. Suchen unter Material.
+            </p>
+          )}
         </div>
       )}
 
