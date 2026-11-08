@@ -534,3 +534,27 @@ def test_character_name_classic_single_name(lua):
     lua.execute("GetUnitName = nil")
     lua.execute("FIRE('PLAYER_LOGIN')")
     assert char(lua).name == "Testa"
+
+
+def test_livetest_sends_on_all_paths(lua):
+    lua.execute("""
+      WOWSTATE.sent = {}
+      WOWSTATE.logging = false
+      function LoggingChat(on) if on ~= nil then WOWSTATE.logging = on end return WOWSTATE.logging end
+      function SendChatMessage(msg, kind, _, target) table.insert(WOWSTATE.sent, kind .. ':' .. target .. ':' .. msg) end
+      UnitName = function() return "Simmen", "Taler" end
+      GetUnitName = nil
+    """)
+    loader = lua.eval("function(src, name) return load(src, '@' .. name) end")
+    loader((ADDON / "Live.lua").read_text(), "Live.lua")("WowFT", lua.globals().NS)
+    lua.execute("FIRE('PLAYER_LOGIN'); SlashCmdList.WOWFT('livetest')")
+    st = lua.globals().WOWSTATE
+    assert st.logging is True  # Chat-Protokoll eingeschaltet
+    sent = [st.sent[i] for i in range(1, len(st.sent) + 1)]
+    stamp = st.time
+    assert sent == [
+        f"WHISPER:Simmen:WFTLIVE {stamp} whisper-vorname",
+        f"WHISPER:Simmen Taler:WFTLIVE {stamp} whisper-leer",
+        f"WHISPER:Simmen-Taler:WFTLIVE {stamp} whisper-strich",
+    ]
+    assert "Live-Test" in st.lastMessage or "livetest" in st.lastMessage.lower() or "Uploader" in st.lastMessage

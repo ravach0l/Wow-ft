@@ -308,6 +308,8 @@ SlashCmdList.WOWFT = function(input)
       char.materials = nil
     end
     Print("Handwerksmaterialien werden " .. (char.settings.trackMaterials and "erfasst." or "nicht mehr erfasst."))
+  elseif cmd == "livetest" then
+    ns.Live.Test()
   elseif cmd == "snap" then
     TakeSnapshot("manual")
     Print("Snapshot gespeichert. Mit /reload wird er auf die Platte geschrieben.")

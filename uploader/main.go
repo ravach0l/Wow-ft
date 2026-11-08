@@ -16,6 +16,7 @@ import (
 	"runtime/debug"
 	"strings"
 	"syscall"
+	"time"
 )
 
 func main() {
@@ -32,6 +33,7 @@ func run() int {
 		version    = flag.Bool("version", false, "Version anzeigen")
 		find       = flag.Bool("find", false, "WoW-Installationen suchen und anzeigen")
 		update     = flag.Bool("update", false, "jetzt nach einer neuen Uploader-Version suchen und sie installieren")
+		livetest   = flag.Bool("livetest", false, "Messtest für fast live: Chat-Protokoll mitlesen (im Spiel /ft livetest)")
 		server     = flag.String("server", "", "Server-Adresse für die Einrichtung (Standard: "+DefaultServer+")")
 	)
 	flag.Parse()
@@ -144,6 +146,14 @@ func run() int {
 		return 1
 	}
 
+	if *livetest {
+		stop := make(chan struct{})
+		sig := make(chan os.Signal, 1)
+		signal.Notify(sig, os.Interrupt, syscall.SIGTERM)
+		go func() { <-sig; close(stop) }()
+		RunLiveTest(cfg.WowDir, logger.Writer(), 30*time.Minute, stop)
+		return 0
+	}
 	if *background {
 		hideConsole()
 	}
