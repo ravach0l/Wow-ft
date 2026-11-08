@@ -54,7 +54,6 @@ zeigt oben, wann der jüngste Upload kam.
 | `Collect.lua` | Phase-4-Sammler: Berufe, Ausrüstung, Ruf, Talente, Material. Jeder läuft in `pcall`; Fehler landen in `apiErrors` und `/ft status` zeigt sie. |
 | `UI.lua` | Minimap-Button (Tooltip mit Level, XP, Snapshot-Stand; Linksklick Einstellungen, Rechtsklick Foto, verschiebbar). Keine eigene XP-Leiste. |
 | `Settings.lua` | Einstellungsfenster (`/ft config`): Server und Upload-Token (landen in `WowFTDB.upload`), Schalter für Gold, Material und Minimap-Button |
-| `Combat.lua` | Letzte Treffer aus dem Kampflog; beim Tod als Todesursache in den `deathLog` |
 | `Recipes.lua` | Rezepte beim Öffnen des Berufsfensters (klassisch und modern) |
 | `Live.lua` | Messtest für fast live (`/ft livetest`) |
 | `Photo.lua` | `/ft foto`: Vollbild mit 3D-Modell, löst Screenshot aus, merkt sich den Zeitpunkt |
@@ -257,6 +256,9 @@ cd web && npm test && npm run build
   die CI grün ist.
 - **Addon-Version hochzählen** (`## Version` in `WowFT.toc` und `ns.VERSION` in `Util.lua`), wenn sich
   das Addon ändert. Nur dann ersetzt der Uploader die installierte Version bei den Freunden.
+- **Keine geschützten Events/Funktionen:** Das Kampflog (`COMBAT_LOG_EVENT_UNFILTERED`) ist im Forever-Client
+  für Addons gesperrt; schon das Anmelden löst `ADDON_ACTION_FORBIDDEN` aus (ein `pcall` verhindert das nicht).
+  Neue Events/Aufrufe erst im Spiel prüfen (`/ft api`, BugGrabber).
 - **Neue Felder sind optional**, damit alte Addon-Versionen weiter hochladen können.
 - **Addon-Code, der WoW-Funktionen aufruft, in `pcall`** (Forever kann abweichen).
 - **Datenbank nur per neuer Alembic-Migration ändern**

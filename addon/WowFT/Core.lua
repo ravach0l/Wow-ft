@@ -150,7 +150,6 @@ function handlers.PLAYER_LOGIN()
   WowFTDB = Util.InitDB(WowFTDB)
   ns.db = WowFTDB
   local guid = UnitGUID("player")
-  ns.Combat.playerGUID = guid
   char = Util.InitCharacter(WowFTDB, guid)
   UpdateMeta()
 
@@ -234,16 +233,11 @@ function handlers.PLAYER_DEAD()
     t = time(),
     level = UnitLevel("player"),
     zone = GetRealZoneText() or GetZoneText(),
-    killer = ns.Combat.Killer(),
   }, ns.MAX_DEATHLOG)
-  ns.Combat.Reset()
 end
 
-function handlers.COMBAT_LOG_EVENT_UNFILTERED()
-  if CombatLogGetCurrentEventInfo then
-    pcall(ns.Combat.Handle, CombatLogGetCurrentEventInfo())
-  end
-end
+-- Hinweis: Das Kampflog (COMBAT_LOG_EVENT_UNFILTERED) ist im Forever-Client für Addons
+-- gesperrt; schon das Anmelden löst ADDON_ACTION_FORBIDDEN aus. Keine Todesursache darüber.
 
 -- Rezepte: kurz nach dem Öffnen bzw. Aktualisieren eines Berufsfensters einlesen.
 local recipePending = {}

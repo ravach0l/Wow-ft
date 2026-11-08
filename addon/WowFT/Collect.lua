@@ -253,7 +253,7 @@ end
 -- landet in WowFTDB.probe und damit nach /reload in der SavedVariables-Datei.
 local PROBE_NAMESPACES = {
   "C_Reputation", "C_SkillLine", "C_TradeSkillUI", "C_SpecializationInfo",
-  "C_ClassTalents", "C_Traits", "C_Item", "C_Container", "C_CharacterInfo",
+  "C_ClassTalents", "C_Traits", "C_Item", "C_Container", "C_CharacterInfo", "C_DeathRecap",
 }
 local PROBE_FUNCTIONS = {
   "GetNumSkillLines", "GetSkillLineInfo", "GetProfessions", "GetProfessionInfo",
@@ -262,6 +262,8 @@ local PROBE_FUNCTIONS = {
   "GetNumSpecializations", "GetSpecialization", "GetSpecializationInfo",
   "GetItemInfoInstant", "GetItemInfo", "GetContainerNumSlots", "GetContainerItemInfo",
   "BNSendGameData", "RequestTimePlayed", "Screenshot",
+  "LoggingChat", "GetBindLocation", "GetTradeSkillLine", "GetCraftDisplaySkillLine",
+  "DeathRecap_GetEvents", "DeathRecap_HasEvents",
 }
 
 local function Resolve(path)

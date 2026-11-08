@@ -89,7 +89,7 @@ Snapshots entstehen bei Login (nach der `/played`-Antwort), Level-Up, Zonenwechs
 | Feld | Inhalt | Herkunft | Wann |
 |---|---|---|---|
 | `deaths` | Anzahl Tode | `PLAYER_DEAD` | laufend |
-| `deathLog` | `{ t, level, zone, killer }`, max. 50; `killer = { source, spell, environment, amount, overkill }` = letzter Treffer innerhalb von 10 s (ab Addon 0.5.0) | `PLAYER_DEAD`, Kampflog | laufend |
+| `deathLog` | `{ t, level, zone, killer }`, max. 50; `killer = { source, spell, environment, amount, overkill }` (optional; derzeit nicht befüllt, weil das Kampflog in Forever für Addons gesperrt ist) | `PLAYER_DEAD` | laufend |
 | `bossKills` | `{ t, id, name, instance, level }`, max. 100 | `ENCOUNTER_END` (success) | laufend |
 | `skills` | `{ name, rank, max, header }` | `GetSkillLineInfo` | Login, Änderung, Logout |
 | `equipment` | `{ slot, id, name, quality }` | `GetInventoryItemLink/Quality` | dto. |
