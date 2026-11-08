@@ -36,3 +36,5 @@ Interface-Nummer in der `.toc` und welche Erweiterungen aus Phase 4 machbar sind
 | Profil-API von Blizzard für Forever? | Web-Recherche | |
 | Kampflog für Addons | `COMBAT_LOG_EVENT_UNFILTERED` anmelden | **gesperrt** (ADDON_ACTION_FORBIDDEN, Addon 0.5.0) – Todesursache darüber nicht möglich |
 | Todesrückblick | `/ft api` → `C_DeathRecap`, `DeathRecap_GetEvents` vorhanden? | |
+| Chat-Protokoll für fast live | `/ft livetest` + `wowft-uploader -livetest` | **gepuffert bis Logout** (2:52–5:33 min), `/reload` leert nicht – kein Weg für fast live (08.11.) |
+| Selbst-Flüstern | `/ft livetest` | geht mit „Vorname Nachname“ und „Vorname-Nachname“, nicht mit dem Vornamen allein; `AddMessage` landet nicht im Protokoll |

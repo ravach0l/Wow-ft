@@ -55,7 +55,7 @@ zeigt oben, wann der jüngste Upload kam.
 | `UI.lua` | Minimap-Button (Tooltip mit Level, XP, Snapshot-Stand; Linksklick Einstellungen, Rechtsklick Foto, verschiebbar). Keine eigene XP-Leiste. |
 | `Settings.lua` | Einstellungsfenster (`/ft config`): Server und Upload-Token (landen in `WowFTDB.upload`), Schalter für Gold, Material und Minimap-Button |
 | `Recipes.lua` | Rezepte beim Öffnen des Berufsfensters (klassisch und modern) |
-| `Live.lua` | Messtest für fast live (`/ft livetest`) |
+| `Live.lua` | Messtest für fast live (`/ft livetest`); Ergebnis siehe Abschnitt 3: kein Weg für fast live |
 | `Photo.lua` | `/ft foto`: Vollbild mit 3D-Modell, löst Screenshot aus, merkt sich den Zeitpunkt |
 
 Befehle: `/ft config|show|hide|status|snap|foto|api`, `/ft gold an|aus`, `/ft material an|aus`.
@@ -152,6 +152,23 @@ er entsteht erst beim Abholen (`server/wowft/api/pairing.py`).
 Auf dem Spielrechner steht nie ein Passwort.
 
 ---
+
+### Warum nichts live geht (gemessen am 08.11.2026)
+
+Addons haben kein Netzwerk; SavedVariables schreibt WoW nur bei Logout und `/reload`. Geprüft wurde
+deshalb der Umweg über das Chat-Protokoll (`/chatlog` → `Logs/WoWChatLog.txt`, mitgelesen vom Uploader;
+Messtest `/ft livetest` + `wowft-uploader -livetest`). Ergebnis im Forever-Client:
+
+- **Gepuffert:** Alle Testzeilen landeten erst beim **Logout** in der Datei (Verzögerung 2:52 bis 5:33 min).
+  `/reload` leert den Puffer **nicht**. Damit ist das Chat-Protokoll sogar langsamer als SavedVariables
+  (die schreibt `/reload` sofort) und **kein Weg für fast live**.
+- **Selbst-Flüstern funktioniert**, aber nur mit vollem Namen: `Vorname Nachname` und `Vorname-Nachname`
+  kommen an (je zweimal, als „flüstert“ und „An“), der Vorname allein und `GetUnitName(…, true)` nicht.
+- Reine Addon-Ausgaben (`AddMessage`) stehen nicht im Chat-Protokoll.
+- Das Kampflog ist für Addons gesperrt (siehe Regeln unten).
+
+Was bleibt: `/reload` ist der schnellste Weg nach außen (der Uploader lädt Sekunden danach hoch).
+Live *im Spiel* zwischen Freunden ginge über Addon-Nachrichten (Phase 5), nicht aber nach außen.
 
 ## 4. Stand
 
