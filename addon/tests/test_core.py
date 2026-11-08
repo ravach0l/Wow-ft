@@ -120,7 +120,7 @@ def lua():
     lua.execute(MOCK)
     ns = lua.table()
     loader = lua.eval("function(src, name) return load(src, '@' .. name) end")
-    for name in ["Util.lua", "Collect.lua", "Core.lua"]:
+    for name in ["Util.lua", "Collect.lua", "Combat.lua", "Recipes.lua", "Core.lua"]:
         loader((ADDON / name).read_text(), name)("WowFT", ns)
     lua.globals().NS = ns
     return lua
@@ -557,4 +557,99 @@ def test_livetest_sends_on_all_paths(lua):
         f"WHISPER:Simmen Taler:WFTLIVE {stamp} whisper-leer",
         f"WHISPER:Simmen-Taler:WFTLIVE {stamp} whisper-strich",
     ]
-    assert "Live-Test" in st.lastMessage or "livetest" in st.lastMessage.lower() or "Uploader" in st.lastMessage
+    assert "/chatlog" in st.lastMessage
+
+
+# --- Addon 0.5.0: Todesursache, Rezepte, Ruhestein, Foto-Infos, /ft share ------------
+
+
+def fire_cleu(lua, *args):
+    g = lua.globals()
+    g.CLEU_ARGS = lua.table(*args)
+    lua.execute("CombatLogGetCurrentEventInfo = function() return unpack(CLEU_ARGS, 1, 20) end")
+    lua.execute("FIRE('COMBAT_LOG_EVENT_UNFILTERED')")
+
+
+ME = "Player-4711-0ABC1234"
+
+
+def test_death_records_killer(lua):
+    lua.execute("FIRE('PLAYER_LOGIN')")
+    # Treffer auf andere werden ignoriert
+    fire_cleu(lua, 1, "SWING_DAMAGE", False, "Creature-1", "Wolf", 0, 0, "Player-anders", "X", 0, 0, 30, -1)
+    fire_cleu(lua, 1, "SWING_DAMAGE", False, "Creature-2", "Kobold", 0, 0, ME, "Testa", 0, 0, 12, -1)
+    fire_cleu(lua, 1, "SPELL_DAMAGE", False, "Creature-3", "Defias-Wegelagerer", 0, 0, ME, "Testa", 0, 0,
+              1752, "Finsterer Stoß", 1, 45, 7)
+    lua.execute("FIRE('PLAYER_DEAD')")
+    k = lua.eval("WowFTDB.characters['Player-4711-0ABC1234'].deathLog[1].killer")
+    assert (k.source, k.spell, k.amount, k.overkill) == ("Defias-Wegelagerer", "Finsterer Stoß", 45, 7)
+
+
+def test_death_environment_and_stale_hits(lua):
+    lua.execute("FIRE('PLAYER_LOGIN')")
+    fire_cleu(lua, 1, "ENVIRONMENTAL_DAMAGE", False, None, None, 0, 0, ME, "Testa", 0, 0, "Falling", 300, 120)
+    lua.execute("FIRE('PLAYER_DEAD')")
+    k = lua.eval("WowFTDB.characters['Player-4711-0ABC1234'].deathLog[1].killer")
+    assert (k.environment, k.amount, k.overkill) == ("Falling", 300, 120)
+    # Treffer älter als 10 s zählen nicht
+    fire_cleu(lua, 1, "SWING_DAMAGE", False, "Creature-2", "Kobold", 0, 0, ME, "Testa", 0, 0, 12, -1)
+    lua.execute("WOWSTATE.gametime = WOWSTATE.gametime + 60; FIRE('PLAYER_DEAD')")
+    assert lua.eval("WowFTDB.characters['Player-4711-0ABC1234'].deathLog[2].killer") is None
+
+
+def test_recipes_classic_tradeskill(lua):
+    lua.execute("""
+      GetTradeSkillLine = function() return "Schmiedekunst", 87, 150 end
+      local R = {
+        { "Schmiedekunst", "header" },
+        { "Rauer Schärfstein", "easy", "|Hitem:2862|h[Rauer Schärfstein]|h", { { "Rauer Stein", 1, 3001 } } },
+        { "Kupferkettengürtel", "optimal", "|Hitem:2851|h[Kupferkettengürtel]|h",
+          { { "Kupferbarren", 6, 2840 }, { "Leichtes Leder", 1, 2318 } } },
+      }
+      GetNumTradeSkills = function() return #R end
+      GetTradeSkillInfo = function(i) return R[i][1], R[i][2] end
+      GetTradeSkillItemLink = function(i) return R[i][3] end
+      GetTradeSkillNumReagents = function(i) return R[i][4] and #R[i][4] or 0 end
+      GetTradeSkillReagentInfo = function(i, j) local r = R[i][4][j]; return r[1], nil, r[2] end
+      GetTradeSkillReagentItemLink = function(i, j) return "|Hitem:" .. R[i][4][j][3] .. "|h" end
+    """)
+    lua.execute("FIRE('PLAYER_LOGIN'); FIRE('TRADE_SKILL_SHOW'); FIRE('TRADE_SKILL_UPDATE'); RUN_TIMERS()")
+    rec = lua.eval("WowFTDB.characters['Player-4711-0ABC1234'].recipes")
+    assert len(rec) == 1 and rec[1].profession == "Schmiedekunst"
+    lst = rec[1].list
+    assert [lst[i].name for i in range(1, len(lst) + 1)] == ["Rauer Schärfstein", "Kupferkettengürtel"]
+    belt = lst[2]
+    assert belt.item == 2851
+    assert [(r.id, r.name, r.count) for r in belt.reagents.values()] == [(2840, "Kupferbarren", 6), (2318, "Leichtes Leder", 1)]
+    # Erneutes Scannen ersetzt den Beruf statt ihn zu doppeln
+    lua.execute("FIRE('TRADE_SKILL_UPDATE'); RUN_TIMERS()")
+    assert len(lua.eval("WowFTDB.characters['Player-4711-0ABC1234'].recipes")) == 1
+
+
+def test_bind_and_photo_info(lua):
+    lua.execute("GetBindLocation = function() return 'Goldhain' end; GetSubZoneText = function() return 'Gasthaus' end")
+    lua.execute("FIRE('PLAYER_LOGIN'); FIRE('TIME_PLAYED_MSG', 10, 10); RUN_TIMERS()")
+    assert char(lua).bind == "Goldhain"
+    lua.execute("""
+      local photo = {}
+      NS.Photo = photo
+    """)
+    loader = lua.eval("function(src, name) return load(src, '@' .. name) end")
+    loader((ADDON / "Photo.lua").read_text(), "Photo.lua")("WowFT", lua.globals().NS)
+    lua.execute("NS.Photo.Record(1793869999)")
+    info = char(lua).photoInfo[1]
+    assert (info.t, info.level, info.zone, info.subzone) == (1793869999, 12, "Westfall", "Gasthaus")
+
+
+def test_share(lua):
+    lua.execute("""
+      WOWSTATE.sent = {}
+      function SendChatMessage(msg, kind) table.insert(WOWSTATE.sent, kind .. '|' .. msg) end
+      IsInGroup = function() return true end
+    """)
+    lua.execute("FIRE('PLAYER_LOGIN'); SlashCmdList.WOWFT('share'); SlashCmdList.WOWFT('share gilde')")
+    sent = lua.globals().WOWSTATE.sent
+    assert sent[1] == "PARTY|[WowFT] Testa · Level 12 (5%) · Westfall · wow.the-birds.xyz"
+    assert sent[2].startswith("GUILD|")
+    lua.execute("SlashCmdList.WOWFT('share irgendwo')")
+    assert "Ziel unbekannt" in lua.globals().WOWSTATE.lastMessage

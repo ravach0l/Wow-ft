@@ -60,6 +60,7 @@ function Live.Test()
     before and "an" or "aus",
     table.concat(results, ", ")
   ))
-  ns.Print("Jetzt prüfen: Uploader mit -livetest starten oder Logs\\WoWChatLog.txt öffnen. Danach kann /chatlog das Protokoll wieder ausschalten.")
+  ns.Print("Jetzt prüfen: Uploader mit -livetest starten oder Logs\\WoWChatLog.txt öffnen.")
+  ns.Print("Danach schaltet /chatlog das Protokoll wieder aus.")
   return stamp, results
 end

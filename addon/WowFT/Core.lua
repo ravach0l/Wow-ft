@@ -150,6 +150,7 @@ function handlers.PLAYER_LOGIN()
   WowFTDB = Util.InitDB(WowFTDB)
   ns.db = WowFTDB
   local guid = UnitGUID("player")
+  ns.Combat.playerGUID = guid
   char = Util.InitCharacter(WowFTDB, guid)
   UpdateMeta()
 
@@ -233,8 +234,36 @@ function handlers.PLAYER_DEAD()
     t = time(),
     level = UnitLevel("player"),
     zone = GetRealZoneText() or GetZoneText(),
+    killer = ns.Combat.Killer(),
   }, ns.MAX_DEATHLOG)
+  ns.Combat.Reset()
 end
+
+function handlers.COMBAT_LOG_EVENT_UNFILTERED()
+  if CombatLogGetCurrentEventInfo then
+    pcall(ns.Combat.Handle, CombatLogGetCurrentEventInfo())
+  end
+end
+
+-- Rezepte: kurz nach dem Öffnen bzw. Aktualisieren eines Berufsfensters einlesen.
+local recipePending = {}
+local function ScheduleRecipes(kind)
+  return function()
+    if not char or recipePending[kind] then
+      return
+    end
+    recipePending[kind] = true
+    C_Timer.After(1, function()
+      recipePending[kind] = nil
+      ns.Recipes.Scan(char, kind)
+    end)
+  end
+end
+handlers.TRADE_SKILL_SHOW = ScheduleRecipes("tradeskill")
+handlers.TRADE_SKILL_UPDATE = ScheduleRecipes("tradeskill")
+handlers.CRAFT_SHOW = ScheduleRecipes("craft")
+handlers.CRAFT_UPDATE = ScheduleRecipes("craft")
+handlers.TRADE_SKILL_LIST_UPDATE = ScheduleRecipes("modern")
 
 -- Boss besiegt (Dungeons und Schlachtzüge).
 function handlers.ENCOUNTER_END(encounterID, encounterName, _, _, success)
@@ -284,6 +313,48 @@ end)
 ---------------------------------------------------------------------------
 -- Slash-Befehle
 ---------------------------------------------------------------------------
+-- /ft share [gruppe|raid|gilde|sagen]: aktueller Stand als Chatzeile.
+local SHARE_CHANNELS = {
+  gruppe = "PARTY", party = "PARTY", raid = "RAID",
+  gilde = "GUILD", guild = "GUILD", sagen = "SAY", say = "SAY",
+}
+
+function ns.ShareLine()
+  local xpMax = UnitXPMax("player")
+  local pct = (xpMax and xpMax > 0) and math.floor(UnitXP("player") / xpMax * 100) or 0
+  local server = ns.db and ns.db.upload and ns.db.upload.server or "https://wow.the-birds.xyz"
+  return ("[WowFT] %s · Level %d (%d%%) · %s · %s"):format(
+    char and char.name or UnitName("player"),
+    UnitLevel("player"),
+    pct,
+    GetRealZoneText() or GetZoneText() or "?",
+    server:gsub("^https?://", "")
+  )
+end
+
+function ns.Share(where)
+  local channel = where and SHARE_CHANNELS[where]
+  if where and not channel then
+    Print("Ziel unbekannt. Möglich: /ft share gruppe | raid | gilde | sagen")
+    return
+  end
+  if not channel then
+    if IsInRaid and IsInRaid() then
+      channel = "RAID"
+    elseif IsInGroup and IsInGroup() then
+      channel = "PARTY"
+    elseif IsInGuild and IsInGuild() then
+      channel = "GUILD"
+    else
+      channel = "SAY"
+    end
+  end
+  local ok, err = pcall(SendChatMessage, ns.ShareLine(), channel)
+  if not ok then
+    Print("Senden fehlgeschlagen: " .. tostring(err))
+  end
+end
+
 SLASH_WOWFT1 = "/ft"
 SlashCmdList.WOWFT = function(input)
   local cmd = strlower(strtrim(input or ""))
@@ -308,6 +379,8 @@ SlashCmdList.WOWFT = function(input)
       char.materials = nil
     end
     Print("Handwerksmaterialien werden " .. (char.settings.trackMaterials and "erfasst." or "nicht mehr erfasst."))
+  elseif cmd == "share" or cmd:match("^share ") then
+    ns.Share(cmd:match("^share%s+(%S+)"))
   elseif cmd == "livetest" then
     ns.Live.Test()
   elseif cmd == "snap" then
@@ -334,6 +407,7 @@ SlashCmdList.WOWFT = function(input)
       Print(("API-Problem bei %s: %s"):format(key, err))
     end
   else
-    Print("Befehle: /ft config | show | hide | status | snap | foto | gold an|aus | material an|aus")
+    Print("Befehle: /ft config | show | hide | status | snap | foto | share [gruppe|raid|gilde|sagen]")
+    Print("         /ft gold an|aus | material an|aus | livetest")
   end
 end

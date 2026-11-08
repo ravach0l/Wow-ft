@@ -13,7 +13,11 @@ read_globals = {
   "GetTalentInfo", "GetTalentTabInfo", "InCombatLockdown", "NUM_BAG_SLOTS", "NUM_BANKBAGSLOTS", "Screenshot",
   -- Forever (Client 1.60.1): moderne Namensräume statt der alten Classic-Funktionen
   "C_ClassTalents", "C_Item", "C_Reputation", "C_SpecializationInfo", "C_Spell", "C_Traits",
-  "GetProfessionInfo", "GetProfessions", "GetSpellInfo", "GetSpellTexture", "LoggingChat", "SendChatMessage", "GetUnitName",
+  "GetProfessionInfo", "GetProfessions", "GetSpellInfo", "GetSpellTexture", "LoggingChat", "SendChatMessage", "CombatLogGetCurrentEventInfo", "GetBindLocation", "GetSubZoneText",
+  "IsInRaid", "IsInGroup", "IsInGuild", "C_TradeSkillUI", "GetTradeSkillLine", "GetNumTradeSkills",
+  "GetTradeSkillInfo", "GetTradeSkillItemLink", "GetTradeSkillNumReagents", "GetTradeSkillReagentInfo",
+  "GetTradeSkillReagentItemLink", "GetCraftDisplaySkillLine", "GetNumCrafts", "GetCraftInfo", "GetCraftNumReagents",
+  "GetCraftReagentInfo", "GetCraftReagentItemLink", "GetUnitName",
   -- Minimap-Button und Einstellungsfenster
   "GetCursorPosition", "Minimap", "UISpecialFrames", "tinsert",
 }

@@ -370,6 +370,10 @@ function Collect.All(char)
   char.equipment = Collect.Safe(char, "equipment", Collect.Equipment) or char.equipment
   char.reputation = Collect.Safe(char, "reputation", Collect.Reputation) or char.reputation
   char.talents = Collect.Safe(char, "talents", Collect.Talents) or char.talents
+  -- Ruhestein-Ort (Gasthaus, an das der Charakter gebunden ist)
+  char.bind = Collect.Safe(char, "bind", function()
+    return GetBindLocation and GetBindLocation() or nil
+  end) or char.bind
   if settings.trackMaterials == false then
     char.materials = nil
   else

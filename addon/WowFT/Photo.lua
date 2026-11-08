@@ -94,6 +94,14 @@ function Photo.Record(t)
   if char then
     char.photoRequests = char.photoRequests or {}
     ns.Util.Push(char.photoRequests, t, ns.MAX_PHOTO_REQUESTS)
+    -- Kontext fürs Foto (Galerie auf der Webseite): wo und mit welchem Level
+    char.photoInfo = char.photoInfo or {}
+    ns.Util.Push(char.photoInfo, {
+      t = t,
+      level = UnitLevel("player"),
+      zone = GetRealZoneText and GetRealZoneText() or nil,
+      subzone = GetSubZoneText and GetSubZoneText() or nil,
+    }, ns.MAX_PHOTO_REQUESTS)
   end
 end
 

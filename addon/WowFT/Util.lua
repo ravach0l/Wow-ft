@@ -1,7 +1,7 @@
 -- Reine Hilfsfunktionen ohne WoW-API, damit sie außerhalb des Spiels testbar sind.
 local _, ns = ...
 
-ns.VERSION = "0.4.1"
+ns.VERSION = "0.5.0"
 ns.SCHEMA = 1
 ns.MAX_SNAPSHOTS = 50
 ns.SNAPSHOT_INTERVAL = 15 * 60 -- Sekunden zwischen periodischen Snapshots
