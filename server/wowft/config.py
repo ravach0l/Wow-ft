@@ -32,6 +32,9 @@ class Settings(BaseSettings):
     # Talent-Icons: Namen per Zauber-ID bei Wowhead nachschlagen, Bilder zwischenspeichern.
     icon_lookup: bool = True
 
+    # Wochenrückblick (sonntags 19 Uhr) als Hintergrundaufgabe im Server
+    weekly_job: bool = True
+
     ingest_rate_per_minute: int = 30
     auth_rate_per_minute: int = 20
 

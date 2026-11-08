@@ -42,7 +42,10 @@ async def upload_photo(char_id: int, t: int, request: Request, session: DbSessio
     target = photo_dir() / rel
     target.parent.mkdir(parents=True, exist_ok=True)
     target.write_bytes(body)
-    photo = Photo(character_id=char_id, ts=t, level=level, path=str(rel))
+    # Kontext aus dem Addon (/ft foto): Level und Zone zum Zeitpunkt der Aufnahme
+    info = next((i for i in (char.state or {}).get("photoInfo", []) if i.get("t") == t), {})
+    zone = " · ".join(p for p in (info.get("zone"), info.get("subzone")) if p) or None
+    photo = Photo(character_id=char_id, ts=t, level=info.get("level") or level, zone=zone, path=str(rel))
     session.add(photo)
     session.commit()
     return {"id": photo.id}
@@ -78,6 +81,15 @@ def delete_photo(photo_id: int, user: CurrentUser, session: DbSession):
     return {"ok": True}
 
 
-def photos_of(session, char_id: int) -> list[dict]:
+def photos_of(session, char_id: int, hide_zone: bool = False) -> list[dict]:
     rows = session.scalars(select(Photo).where(Photo.character_id == char_id).order_by(Photo.ts.desc()))
-    return [{"id": p.id, "url": f"/api/photos/{p.id}", "ts": p.ts, "level": p.level} for p in rows]
+    return [
+        {
+            "id": p.id,
+            "url": f"/api/photos/{p.id}",
+            "ts": p.ts,
+            "level": p.level,
+            "zone": None if hide_zone else p.zone,
+        }
+        for p in rows
+    ]

@@ -112,10 +112,47 @@ class MaterialsIn(_In):
     bankScanned: int | None = None
 
 
+class KillerIn(_In):
+    """Letzter Treffer vor dem Tod (aus dem Kampflog)."""
+
+    source: str | None = Field(default=None, max_length=100)
+    spell: str | None = Field(default=None, max_length=100)
+    environment: str | None = Field(default=None, max_length=30)
+    amount: int | None = None
+    overkill: int | None = None
+
+
 class DeathIn(_In):
     t: int = Field(gt=1_000_000_000)
     level: int | None = None
     zone: str | None = Field(default=None, max_length=100)
+    killer: KillerIn | None = None
+
+
+class ReagentIn(_In):
+    id: int | None = None
+    name: str | None = Field(default=None, max_length=150)
+    count: int = Field(default=1, ge=0)
+
+
+class RecipeIn(_In):
+    name: str = Field(max_length=150)
+    item: int | None = None
+    spell: int | None = None
+    reagents: LuaList(ReagentIn, 20) = Field(default_factory=list)
+
+
+class ProfessionRecipesIn(_In):
+    profession: str = Field(max_length=100)
+    scanned: int | None = None
+    list: LuaList(RecipeIn, 500) = Field(default_factory=list)
+
+
+class PhotoInfoIn(_In):
+    t: int
+    level: int | None = None
+    zone: str | None = Field(default=None, max_length=100)
+    subzone: str | None = Field(default=None, max_length=100)
 
 
 class BossIn(_In):
@@ -148,6 +185,10 @@ class CharacterIn(BaseModel):
     reputation: LuaList(RepIn, 200) | None = None
     talents: LuaList(TalentTabIn, 5) | None = None
     materials: MaterialsIn | None = None
+    # Addon 0.5.0
+    recipes: LuaList(ProfessionRecipesIn, 20) | None = None
+    bind: str | None = Field(default=None, max_length=100)
+    photoInfo: LuaList(PhotoInfoIn, 50) = Field(default_factory=list)
 
     _lists = field_validator("snapshots", "levelUps", mode="before")(_empty_dict_to_list)
 
@@ -162,6 +203,12 @@ class CharacterIn(BaseModel):
             out["materials"] = self.materials.model_dump()
         if self.deaths is not None:
             out["deaths"] = self.deaths
+        if self.recipes is not None:
+            out["recipes"] = [r.model_dump() for r in self.recipes]
+        if self.bind is not None:
+            out["bind"] = self.bind
+        if self.photoInfo:
+            out["photoInfo"] = [p.model_dump() for p in self.photoInfo]
         return out
 
 
@@ -244,7 +291,7 @@ def keep_known(prev: dict[str, Any], new: dict[str, Any]) -> dict[str, Any]:
     return {k: v for k, v in new.items() if not (k in KEEP_WHEN_EMPTY and not v and prev.get(k))}
 
 
-KEEP_WHEN_EMPTY = ("skills", "equipment", "reputation", "talents")
+KEEP_WHEN_EMPTY = ("skills", "equipment", "reputation", "talents", "recipes")
 
 
 def store(session: Session, user: User, data: SavedVariablesIn) -> tuple[dict[str, Any], list[int]]:
@@ -309,7 +356,16 @@ def store(session: Session, user: User, data: SavedVariablesIn) -> tuple[dict[st
             for lu in c.levelUps
         ]
         rows += [
-            {"character_id": char.id, "ts": d.t, "type": "death", "data": {"level": d.level, "zone": d.zone}}
+            {
+                "character_id": char.id,
+                "ts": d.t,
+                "type": "death",
+                "data": {
+                    "level": d.level,
+                    "zone": d.zone,
+                    "killer": d.killer.model_dump(exclude_none=True) if d.killer else None,
+                },
+            }
             for d in c.deathLog
         ]
         rows += [

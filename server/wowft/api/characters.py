@@ -35,7 +35,7 @@ def history(char_id: int, user: CurrentUser, session: DbSession):
         ],
         "events": [event_out(e, c) for e in events if privacy.event_visible(c, user.id, e.type)],
         "state": _state_out(session, c.state or {}, hidden),
-        "photos": [] if "photo" in hidden else photos_of(session, c.id),
+        "photos": [] if "photo" in hidden else photos_of(session, c.id, hide_zone="zone" in hidden),
         "hidden": sorted(hidden),
     }
 
@@ -67,4 +67,15 @@ def _state_out(session, state: dict, hidden: frozenset[str] = frozenset()) -> di
         "talents": [] if "talents" in hidden else icons.with_icons(session, state.get("talents") or []),
         "materials": None if "materials" in hidden else state.get("materials"),
         "deaths": None if "deaths" in hidden else state.get("deaths"),
+        "bind": None if "zone" in hidden else state.get("bind"),
+        "recipes": []
+        if "skills" in hidden
+        else [
+            {
+                "profession": r.get("profession"),
+                "count": len(r.get("list") or []),
+                "scanned": r.get("scanned"),
+            }
+            for r in state.get("recipes") or []
+        ],
     }

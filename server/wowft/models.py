@@ -32,6 +32,8 @@ class Group(Base):
     name: Mapped[str] = mapped_column(String(100))
     invite_code: Mapped[str] = mapped_column(String(64), unique=True)
     discord_webhook: Mapped[str | None] = mapped_column(String(300))
+    # Wochenrückblick in Discord (sonntags), nur mit Webhook
+    weekly_report: Mapped[bool] = mapped_column(Boolean, default=True, server_default="1")
     created: Mapped[int] = mapped_column(Integer, default=now)
 
     members: Mapped[list["GroupMember"]] = relationship(back_populates="group", cascade="all, delete-orphan")
@@ -126,6 +128,7 @@ class Photo(Base):
     character_id: Mapped[int] = mapped_column(ForeignKey("characters.id", ondelete="CASCADE"), index=True)
     ts: Mapped[int] = mapped_column(Integer)
     level: Mapped[int | None] = mapped_column(Integer)
+    zone: Mapped[str | None] = mapped_column(String(150))
     path: Mapped[str] = mapped_column(String(255))
     created: Mapped[int] = mapped_column(Integer, default=now)
 

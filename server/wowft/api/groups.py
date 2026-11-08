@@ -1,11 +1,12 @@
 import secrets
+from datetime import datetime
 
-from fastapi import APIRouter, HTTPException
+from fastapi import APIRouter, BackgroundTasks, HTTPException
 from pydantic import BaseModel, Field
 from sqlalchemy import and_, func, not_, or_, select
 from sqlalchemy.orm import Session
 
-from .. import discord, dungeons, metrics, privacy
+from .. import discord, dungeons, metrics, privacy, weekly
 from ..auth import CurrentUser, DbSession
 from ..config import get_settings
 from ..events import describe
@@ -68,6 +69,7 @@ def _group_out(g: Group, me: GroupMember) -> dict:
     if me.role == "owner":
         out["inviteCode"] = g.invite_code
         out["discordWebhook"] = g.discord_webhook
+        out["weeklyReport"] = g.weekly_report
     return out
 
 
@@ -79,6 +81,7 @@ class GroupPatch(BaseModel):
     name: str | None = Field(default=None, min_length=1, max_length=100)
     # Leerer String entfernt den Webhook.
     discordWebhook: str | None = Field(default=None, max_length=300)
+    weeklyReport: bool | None = None
 
 
 @router.patch("/groups/{group_id}")
@@ -91,6 +94,8 @@ def patch_group(group_id: int, body: GroupPatch, user: CurrentUser, session: DbS
         if url and not discord.valid_webhook(url):
             raise HTTPException(422, "Das ist keine Discord-Webhook-Adresse")
         m.group.discord_webhook = url or None
+    if body.weeklyReport is not None:
+        m.group.weekly_report = body.weeklyReport
     session.commit()
     return _group_out(m.group, m)
 
@@ -391,3 +396,26 @@ def dungeon_planner(group_id: int, user: CurrentUser, session: DbSession):
             }
         )
     return {"dungeons": [d.out() for d in dungeons.DUNGEONS], "characters": chars}
+
+
+# --- Wochenrückblick -----------------------------------------------------------------
+
+
+@router.get("/groups/{group_id}/weekly")
+def weekly_preview(group_id: int, user: CurrentUser, session: DbSession):
+    """Vorschau des Wochenrückblicks (nur Gruppenleitung)."""
+    m = _require_owner(session, group_id, user)
+    return {"text": weekly.build_report(session, m.group, datetime.now(weekly.TZ))}
+
+
+@router.post("/groups/{group_id}/weekly/send")
+def weekly_send_now(group_id: int, user: CurrentUser, session: DbSession, background: BackgroundTasks):
+    """Wochenrückblick jetzt an den Discord-Webhook schicken (zum Testen)."""
+    m = _require_owner(session, group_id, user)
+    if not m.group.discord_webhook:
+        raise HTTPException(400, "Kein Discord-Webhook eingetragen")
+    text = weekly.build_report(session, m.group, datetime.now(weekly.TZ)) or (
+        f"**Wochenrückblick {m.group.name}**: Diese Woche ist noch nichts passiert."
+    )
+    background.add_task(discord.send, [(m.group.discord_webhook, text)])
+    return {"text": text}

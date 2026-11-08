@@ -94,6 +94,27 @@ def derive(prev: dict[str, Any], new: dict[str, Any]) -> list[tuple[str, str, di
     return out
 
 
+ENVIRONMENT = {
+    "falling": "Sturz",
+    "drowning": "ertrunken",
+    "fatigue": "Erschöpfung",
+    "fire": "Feuer",
+    "lava": "Lava",
+    "slime": "Schleim",
+}
+
+
+def killer_text(killer: dict | None) -> str:
+    """'Defias-Wegelagerer, Finsterer Stoß' bzw. 'Sturz'."""
+    if not killer:
+        return ""
+    env = killer.get("environment")
+    if env:
+        return ENVIRONMENT.get(str(env).lower(), str(env))
+    parts = [p for p in (killer.get("source"), killer.get("spell")) if p]
+    return ", ".join(parts)
+
+
 def describe(type_: str, data: dict[str, Any] | None) -> str:
     d = data or {}
     if type_ == "level_up":
@@ -106,7 +127,8 @@ def describe(type_: str, data: dict[str, Any] | None) -> str:
         return f"ist bei {d.get('name')} jetzt {STANDINGS.get(d.get('standing'), d.get('standing'))}"
     if type_ == "death":
         where = f" in {d['zone']}" if d.get("zone") else ""
-        return f"ist gestorben{where}"
+        cause = killer_text(d.get("killer"))
+        return f"ist gestorben{where}" + (f" ({cause})" if cause else "")
     if type_ == "boss":
         where = f" ({d['instance']})" if d.get("instance") else ""
         return f"hat {d.get('name')} besiegt{where}"
