@@ -61,13 +61,14 @@ Per cron täglich aufrufen.
 git pull && cd deploy && docker compose up -d --build
 ```
 
-Auf mediavault liegt `~/wow-ft` ohne `.git` (per Kopie angelegt), `git pull` geht dort nicht.
-Von der Entwicklungsmaschine aus die getrackten Dateien übertragen (`.env`, `data/`, Backups und
-das Override bleiben unberührt):
+Auf mediavault ist `~/wow-ft` ein Git-Checkout von `ravach0l/Wow-ft` (Branch `main`). `.env`, `data/`,
+Backups und das Override sind nicht getrackt und bleiben beim Pull unberührt:
 
 ```sh
-git archive HEAD | ssh mediavault 'cd ~/wow-ft && tar -x && cd deploy && docker compose up -d --build'
+ssh mediavault 'cd ~/wow-ft && git pull --ff-only && cd deploy && docker compose up -d --build'
 ```
+
+Vor Updates mit Migration vorher `deploy/backup.sh` laufen lassen.
 
 ## 6. Uploader und Addon verteilen
 
